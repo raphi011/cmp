@@ -6,9 +6,9 @@ asmb:
 .LFB0:
 	.cfi_startproc
 	testq	%rcx, %rcx
+	movq	$0, %rax
 	je	.END
-	movl	$0, %eax
-	movl	$0, %r9d
+#	movl	$0, %r9d
         clc            
 .LOOP:
         movq    (%rdi, %rax, 8), %r10
