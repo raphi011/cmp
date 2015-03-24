@@ -6,17 +6,17 @@ asmb:
 .LFB0:
 	.cfi_startproc
 	testq	%rcx, %rcx
-	movq	$0, %rax
-	je	.END
-#	movl	$0, %r9d
+        movq    $0, %rax
         clc            
+	je	.END
 .LOOP:
         movq    (%rdi, %rax, 8), %r10
         sbbq    (%rsi, %rax, 8), %r10   
         movq    %r10, (%rdx, %rax, 8)  
-        addq    $1, %rax              
-        cmpq    %rcx, %rax           
-        jne     .LOOP                 
+        incq    %rax              
+        loop    .LOOP
+        #cmpq    %rcx, %rax           
+        #jne     .LOOP                 
 .END:
         sbbq    %r9, %r9               
         movq    %r9, (%rdx, %rax, 8) 
