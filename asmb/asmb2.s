@@ -1,7 +1,7 @@
-	.file	"asmb.c"
+	.file	"asmb2.c"
 	.text
 	.globl	asmb
-	.type	asmb, @function
+        .type	asmb, @function
 asmb:
 .LFB0:
 	.cfi_startproc
