@@ -1,3 +1,10 @@
+%{
+    #include "parser.tab.h"
+    #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno;
+%}
+
+%option yylineno
+
 letter_lower    [a-z]
 letter_upper    [A-Z]
 letter          ({letter_lower}|{letter_upper})
@@ -12,32 +19,32 @@ dec_num         {digit}+
 comment         "//".+
 
 identifier      {letter}({letter}|{digit})*
-keyword         ("fun"|"if"|"then"|"else"|"let"|"in"|"not"|"head"|"tail"|"and"|"end"|"isnum"|"isfun")
-lexem           ("->"|[;=+\-*.<()])
+lexem           ([;=+\-*.<()])
 
 whitespace      [ \t\n]
 
-    int error_count = 0;
-
 %%
 
+"fun"                   return FUN;
+"if"                    return IF;
+"then"                  return THEN;
+"else"                  return ELSE;
+"let"                   return LET;
+"in"                    return IN;
+"not"                   return NOT;
+"head"                  return HEAD;
+"tail"                  return TAIL;
+"and"                   return AND;
+"end"                   return END;
+"isnum"                 return ISNUM;
+"islist"                return ISLIST;
+"isfun"                 return ISFUN;
+"->"                    return ASSIGN;
 
+{lexem}                 return yytext[0];
+{hex_num}               return NUM; 
+{dec_num}               return NUM; 
+{identifier}            return IDENT;
 {comment}               ;
-{keyword}               |
-{lexem}                 printf("%s\n", yytext);
-{hex_num}               printf("num %d\n",strtol(yytext+1,NULL,16));
-{dec_num}               printf("num %d\n",strtol(yytext,NULL,10));
-{identifier}            printf("ident %s\n", yytext);
-{whitespace}            ;
-.                       fprintf(stderr, "Error: %s\n", yytext); error_count++;
-
-%%
-
-int main(void) {
-    yylex();
-    if (error_count) {
-        fprintf(stderr, "%d errors occured.\n", error_count);
-        return 1;
-    }
-    return 0;
-}
+{whitespace}+           ;
+.                       { fprintf(stderr, "%d: Error: %s\n",yylloc.first_line, yytext); exit(1); }
