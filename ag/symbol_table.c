@@ -6,11 +6,12 @@
 #include "symbol_table.h"
 
 
-void symbol_table_add(struct symbol* table, char *name) {
+struct symbol* symbol_table_add(struct symbol* table, char *name) {
     struct symbol *new_entry = malloc(sizeof(struct symbol));
     new_entry->name = name;
+    new_entry->next = table;
 
-    table->next = new_entry;
+    return new_entry;
 }
 
 bool symbol_table_exists(struct symbol* table, char *name) {
@@ -28,8 +29,15 @@ bool symbol_table_exists(struct symbol* table, char *name) {
 }
 
 struct symbol* symbol_table_clone(struct symbol* table) {
-    
+    struct symbol *current; 
+    struct symbol *clone = current = malloc(sizeof(struct symbol)); 
+    clone->name = strdup(table->name); 
+     
+    while ((table = table->next) != NULL) {
+        current->next = malloc(sizeof(struct symbol)); 
+        current = current->next;
+        current->name = strdup(table->name);
+    }
 
-    return NULL;
-
+    return clone;
 }

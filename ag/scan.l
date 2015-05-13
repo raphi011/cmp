@@ -45,8 +45,8 @@ whitespace      [ \t\n]
 "+"                     return PLUS;
 "-"                     return MINUS;
 "*"                     return MULTIPLICATION;
-"."                     return POINT;
-"<"                     return LESSER;
+"."                     return DOT;
+"<"                     return LOWER;
 "("                     return BRACKET_LEFT;
 ")"                     return BRACKET_RIGHT;
 
