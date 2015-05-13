@@ -1,10 +1,17 @@
+
+@attributes {char *name;} IDENT
+@attributes {int val;} NUM
+
+
+@traversal @postorder t
+
 %{
     #include <stdio.h>
     #include <stdlib.h>
     
     #define YYDEBUG 1
 
-    int yylex();
+    /* int yylex(); */
     void yyerror(const char *s);
     
     int error_count = 0;
@@ -14,14 +21,17 @@
 %union {
     double val;
     const char *name;
-}
+} 
 
-%locations
+/* %locations */
 
 %start program
-%token <name> IDENT
-%token <val> NUM
+%token IDENT
+%token NUM
+/* %token <name> IDENT
+%token <val> NUM */
 %token FUN IF THEN ELSE LET IN NOT HEAD TAIL AND END ISNUM ISLIST ISFUN ASSIGN
+%token SEMICOLON EQUALS PLUS MINUS MULTIPLICATION POINT LESSER BRACKET_LEFT BRACKET_RIGHT
 %right '='
 
 %%
@@ -101,7 +111,7 @@ term    : '(' expr ')'
 %% 
 
 void yyerror(const char *s) {
-    fprintf(stderr, "%d: Error: %s\n", yylloc.first_line, s);
+    fprintf(stderr, "Error: %s\n", s);
     error_count++;
 }
 

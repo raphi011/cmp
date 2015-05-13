@@ -1,9 +1,9 @@
 %{
-    #include "parser.tab.h"
-    #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno;
+    #include "oxout.tab.h"
+    #include <string.h>
+    #include <stdlib.h>
 %}
 
-%option yylineno
 
 letter_lower    [a-z]
 letter_upper    [A-Z]
@@ -19,7 +19,6 @@ dec_num         {digit}+
 comment         "//".+
 
 identifier      {letter}({letter}|{digit})*
-lexem           ([;=+\-*.<()])
 
 whitespace      [ \t\n]
 
@@ -41,10 +40,19 @@ whitespace      [ \t\n]
 "isfun"                 return ISFUN;
 "->"                    return ASSIGN;
 
-{lexem}                 return yytext[0];
-{hex_num}               return NUM; 
-{dec_num}               return NUM; 
-{identifier}            return IDENT;
+";"                     return SEMICOLON;
+"="                     return EQUALS;
+"+"                     return PLUS;
+"-"                     return MINUS;
+"*"                     return MULTIPLICATION;
+"."                     return POINT;
+"<"                     return LESSER;
+"("                     return BRACKET_LEFT;
+")"                     return BRACKET_RIGHT;
+
+{hex_num}               return NUM; @{ @NUM.val@ = strtol(yytext+1,NULL,16); @}
+{dec_num}               return NUM; @{ @NUM.val@ = strtol(yytext,NULL,10); @}
+{identifier}            return IDENT; @{ @IDENT.name@ = strdup(yytext); @}
 {comment}               ;
 {whitespace}+           ;
-.                       { fprintf(stderr, "%d: Error: %s\n",yylloc.first_line, yytext); exit(1); }
+.                       { fprintf(stderr, "Error: %s\n", yytext); exit(1); }

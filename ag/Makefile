@@ -1,8 +1,8 @@
 YACC = bison
 FLEX = flex
-GCC = gcc
+OX = ox
 RM = rm
-
+GCC = gcc 
 
 TARGET = ag
 SOURCE = Makefile scan.l gram.y
@@ -13,9 +13,18 @@ LDFLAGS = -lfl
 
 all: $(TARGET)
 
-$(TARGET): 
+$(TARGET): lex.yy.c oxout.tab.c 
+	$(GCC) $(GCCFLAGS) -o $@ $^ $(LDFLAGS) 
 
+oxout.y oxout.l: gram.y scan.l
+	$(OX) $^
 
+oxout.tab.c oxout.tab.h: oxout.y
+	$(YACC) -d $<
+
+lex.yy.c: oxout.l
+	$(FLEX) $<
 
 clean: 
-	rm -f $(TARGET)
+	rm -f $(TARGET) oxout.l oxout.y oxout.tab.c oxout.tab.h lex.yy.c
+	
