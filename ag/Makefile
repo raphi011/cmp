@@ -8,12 +8,12 @@ TARGET = ag
 SOURCE = Makefile scan.l gram.y
 
 YFLAGS = -d 
-GCCFLAGS = -Wall -Wextra -pedantic -g 
+GCCFLAGS = -std=c99 -Wall -Wextra -pedantic -g 
 LDFLAGS = -lfl
 
 all: $(TARGET)
 
-$(TARGET): lex.yy.c oxout.tab.c 
+$(TARGET): lex.yy.c oxout.tab.c symbol_table.c 
 	$(GCC) $(GCCFLAGS) -o $@ $^ $(LDFLAGS) 
 
 oxout.y oxout.l: gram.y scan.l

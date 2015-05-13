@@ -1,4 +1,3 @@
-
 @attributes {char *name;} IDENT
 @attributes {int val;} NUM
 
@@ -11,7 +10,6 @@
     
     #define YYDEBUG 1
 
-    /* int yylex(); */
     void yyerror(const char *s);
     
     int error_count = 0;
@@ -23,16 +21,11 @@
     const char *name;
 } 
 
-/* %locations */
-
 %start program
-%token IDENT
-%token NUM
-/* %token <name> IDENT
-%token <val> NUM */
+%token IDENT NUM
 %token FUN IF THEN ELSE LET IN NOT HEAD TAIL AND END ISNUM ISLIST ISFUN ASSIGN
 %token SEMICOLON EQUALS PLUS MINUS MULTIPLICATION POINT LESSER BRACKET_LEFT BRACKET_RIGHT
-%right '='
+%right EQUALS
 
 %%
 
