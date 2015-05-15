@@ -6,14 +6,11 @@
 
 #include "symbol_table.h"
 
-#define EXIT_ERROR (3)
 
 struct symbol *symbol_table_add(struct symbol* table, char *name) {
-    printf("adding symbol: %s\n", name);
-
     if (symbol_table_exists(table,name)) {
         exit(EXIT_ERROR); 
-    }
+    } 
 
     struct symbol * new = symbol_table_clone(table);
     
@@ -73,7 +70,6 @@ bool symbol_table_exists(struct symbol* table, char *name) {
 
     return false;
 }
-
 
 struct symbol* symbol_table_clone(struct symbol* table) {
     if (table == NULL) {

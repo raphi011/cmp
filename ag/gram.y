@@ -1,13 +1,11 @@
 @attributes {char *name;} IDENT
 @attributes {int val;} NUM
-
-
-@attributes {struct symbol* symbols;} lambda expr term plus minus mult and dot lower equals
-@attributes {struct symbol* globals; } program
+@attributes {struct symbol* symbols;} lambda expr term plus minus mult and dot lower equals 
+@attributes {struct symbol* globals;} program_start
+@attributes {struct symbol* globals; struct symbol* globals_down; } program
 @attributes {char *global_variable; struct symbol* symbols;} def
 
 @traversal @postorder t
-@traversal @preorder p
 
 %{
     #include <stdio.h>
@@ -28,41 +26,39 @@
     double val;
     const char *name;
 } 
-%start program 
+
+%start program_start
+
 %token IDENT NUM
 %token FUN IF THEN ELSE LET IN NOT HEAD TAIL AND END ISNUM ISLIST ISFUN ASSIGN
 %token SEMICOLON EQUALS PLUS MINUS MULTIPLICATION DOT LOWER BRACKET_LEFT BRACKET_RIGHT
+
 %right EQUALS
 
 %%
 
-/* program_start: 
+program_start : program
         @{
-            @i @program_start.globals_up@ = NULL;
+            @i @program_start.globals@ = @program.globals@;
+            @i @program.globals_down@ = @program_start.globals@;
         @}
-        | program
-        @{
-            @i @program_start.globals_up = @program.globals@;
-            @i @program.globals_down = @program_start.globals_up@; 
-        @} */
 
 program : 
         @{ @i @program.globals@ = NULL; @} 
-        /*| def SEMICOLON
-        @{ 
-            @i @program.0.globals@ = symbol_table_add(NULL, @def.global_variable@);
-            @i @def.symbols@ = @program.0.globals@; 
-        @} */
         | program def SEMICOLON
         @{
             @i @program.0.globals@ = symbol_table_add(@program.1.globals@, @def.global_variable@);
-            @i @def.symbols@ = @program.0.globals@; 
+            @i @program.1.globals_down@ = @program.0.globals_down@;
+            @i @def.symbols@ = @program.0.globals_down@; 
         @}
         ;
 
 def     : IDENT EQUALS lambda
         @{
-            @i @def.global_variable@ = @IDENT.name@; @i @lambda.symbols@ = @def.symbols@; @} ;
+            @i @def.global_variable@ = @IDENT.name@; 
+            @i @lambda.symbols@ = @def.symbols@; 
+        @} 
+        ;
 
 lambda  : FUN IDENT ASSIGN expr END
         @{ @i @expr.symbols@ = symbol_table_add(@lambda.symbols@, @IDENT.name@); @}
@@ -191,11 +187,7 @@ term    : BRACKET_LEFT expr BRACKET_RIGHT
         @{ @i @expr.symbols@ = @term.symbols@; @}
         | NUM
         | IDENT
-        @{ @t 
-            printf("looking for '%s'\n", @IDENT.name@);
-            symbol_table_print(@term.symbols@);
-            if (!symbol_table_exists(@term.symbols@, @IDENT.name@)) /* printf("%s not found", @IDENT.name@);*/  exit(3);   
-        @}
+        @{ @t if (!symbol_table_exists(@term.symbols@, @IDENT.name@)) exit(EXIT_ERROR); @}
         ; 
 %% 
 
