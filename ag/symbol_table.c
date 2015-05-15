@@ -6,12 +6,26 @@
 #include "symbol_table.h"
 
 
-struct symbol* symbol_table_add(struct symbol* table, char *name) {
+void symbol_table_add_after(struct symbol* table, char *name) {
+
+    while (table->next != NULL) {
+        table = table->next;
+    }
+
+    struct symbol *new_entry = malloc(sizeof(struct symbol));
+    new_entry->name = name;
+    table->next = new_entry;
+}
+
+struct symbol* symbol_table_add_before(struct symbol* table, char *name) {
+
     struct symbol *new_entry = malloc(sizeof(struct symbol));
     new_entry->name = name;
     new_entry->next = table;
 
     return new_entry;
+
+
 }
 
 bool symbol_table_exists(struct symbol* table, char *name) {

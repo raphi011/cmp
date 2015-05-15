@@ -1,6 +1,8 @@
 @attributes {char *name;} IDENT
 @attributes {int val;} NUM
 
+
+@attributes {struct symbol* symbols;} program 
 @attributes {struct symbol* symbols;} lambda
 @attributes {struct symbol* symbols;} expr
 @attributes {struct symbol* symbols;} def
@@ -45,20 +47,24 @@
 %%
 
 program : 
+        /* @{ @i @program.symbols@ = NULL; @} */
         | program def SEMICOLON
+        @{ 
+            @i @program.1.globals = merge(@program.globals@, @def.symbols@);
+            @i @program.1.symbols@ = @def.symbols@;
+        @}
         ;
-
-        
 
 def     : IDENT EQUALS lambda
         @{
-            @i @def.symbols@ = symbol_table_add(@def.symbols@, @IDENT.name@);
+            @t if (symbol_table_exists(@def.symbols@, @IDENT.name@)) { exit(3); } 
+            @i @def.symbols@ = symbol_table_add_after(@def.symbols@, @IDENT.name@);
             @i @lambda.symbols@ = @def.symbols@; 
         @}
         ;
 
 lambda  : FUN IDENT ASSIGN expr END
-        @{ @i @expr.symbols@ = symbol_table_add(@lambda.symbols@, @IDENT.name@); @}
+        @{ @i @expr.symbols@ = symbol_table_add_before(@lambda.symbols@, @IDENT.name@); @}
         ;  
 
 expr    : IF expr THEN expr ELSE expr END
@@ -71,8 +77,8 @@ expr    : IF expr THEN expr ELSE expr END
         @{ @i @lambda.symbols@ = @expr.symbols@; @}
         | LET IDENT EQUALS expr IN expr END
         @{ 
-            @i @expr.1.symbols@ = symbol_table_add(@expr.0.symbols@, @IDENT.name@);
-            @i @expr.2.symbols@ = symbol_table_add(@expr.0.symbols@, @IDENT.name@); 
+            @i @expr.1.symbols@ = symbol_table_add_before(@expr.0.symbols@, @IDENT.name@);
+            @i @expr.2.symbols@ = symbol_table_add_before(@expr.0.symbols@, @IDENT.name@); 
         @}
         | term
         @{  @i @term.symbols@ = @expr.symbols@; @}
