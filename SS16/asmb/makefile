@@ -1,6 +1,5 @@
 
-all: asma.s
-	gcc -c asma.s -o asma.o
-
+all: asmb.s
+	gcc -c asmb.s -o asmb.o
 clean:
-	rm -f asma.o
+	rm -f asmb.o
