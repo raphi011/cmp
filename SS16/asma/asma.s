@@ -8,7 +8,6 @@ asma:
 	movq	%rdx, %rcx              # copy parameter C from rdx to rcx (64 bit operation)
 	movq	%rdi, %rax              # copy  parameter A from  rdi to rax
 	imul	%rsi              # multiply parameter A  in register SI by AX and store it in AX 
-	#cqto			      # sign extend 	
 	idiv	%rcx		     #  divide  value in AX by CX ( value C)
 	ret 			     # return value in eax	
 	.cfi_endproc
