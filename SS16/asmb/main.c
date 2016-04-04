@@ -1,32 +1,38 @@
 #include <stdio.h>
+#include <string.h>
+#include <mcheck.h>
+#include <stdlib.h>
 
-long asma(long a, long b, long c);
+extern long asmb_callchecking(long a, long b[], long c[], size_t n);
 
-int main(int argc, char **argv) {
-  long a, b, c, r;
+int test(long a, long b[], long c[], size_t n, long result)
+{
+  int i;
+  long r;
+  printf("calling asmb(%ld, b, c, %ld)\n", a, n);
+  for (i=0; i<n; i++)
+    printf(" b[%d] = %ld, c[%d] = %ld\n", i, b[i], i, c[i]);
+  r = asmb_callchecking(a,b,c,n);
+  if (r==result) {
+    printf("= %ld ok\n", r);
+    return 1;
+  } else {
+    printf("liefert %ld, erwartet %ld\n",r,result);
+    return 0;
+  }
+}
 
+int main()
+{
+  unsigned long b[]={10000000000L,4862021554448358207L};
+  unsigned long c[]={-95367431640625L,5901078158330543530L};
 
-  // Test 1
-  a = -10000000000L;
-  b = -10000000000L;
-  c = -1048576L;
-  r = asma(a, b, c);
-  printf("asma(%ld, %ld, %ld) = %ld\n", a, b, c, r);
+  int f;
 
-
-  // Test 2
-  a = 10000000000L;
-  b = 10000000000L;
-  c = 95367431640625L;
-  r = asma(a, b, c);
-  printf("asma(%ld, %ld, %ld) = %ld\n", a, b, c, r);
-
-
-  // Test 3
-  a = 2973064094867485803L;
-  b = 4862021554448358207L;
-  c = 5901078158330543530L;
-  r = asma(a, b, c);
-  printf("asma(%ld, %ld, %ld) = %ld\n", a, b, c, r);
-  return 0;
+  f = test(2973064094867485803,b,c,2,-256855990144222);
+  if (!f)
+    fprintf(stdout,"\nTest failed.\n");
+  else
+    fprintf(stdout,"\nTest succeeded.\n");
+  return !f;
 }
