@@ -13,7 +13,7 @@ comment         "//".+
 
 identifier      (_|{letter})(_|{letter}|{digit})*
 keyword         ("end"|"return"|"var"|"do"|"continue"|"break"|"or"|"not")
-lexem           ("->"|":="|[;(),:*+<=-^])
+lexem           ("->"|":="|[;(),:*+<=\-^])
 
 whitespace      [ \t\n]
 
@@ -25,7 +25,7 @@ whitespace      [ \t\n]
 {comment}               ;
 {keyword}               |
 {lexem}                 printf("%s\n", yytext);
-{hex_num}               printf("num %d\n",strtol(yytext+1,NULL,16));
+{hex_num}               printf("num %d\n",strtol(yytext+2,NULL,16));
 {dec_num}               printf("num %d\n",strtol(yytext,NULL,10));
 {identifier}            printf("id %s\n", yytext);
 {whitespace}            ;
