@@ -19,12 +19,14 @@ dec_num         {digit}+
 comment         "//".+
 
 identifier      (_|{letter})(_|{letter}|{digit})*
-lexem           ("->"|":="|[;(),:*+<=-^])
+lexem           [;(),:*+<=\-^]
 
 whitespace      [ \t\n]
 
 %%
 
+":="                    return ASSIGN;
+"->"                    return GUARD;
 "end"                   return END;
 "return"                return RETURN;
 "var"                   return VAR;
@@ -37,7 +39,7 @@ whitespace      [ \t\n]
 {lexem}                 return yytext[0];
 {hex_num}               return NUM; 
 {dec_num}               return NUM; 
-{identifier}            return IDENT;
+{identifier}            return ID;
 {comment}               ;
 {whitespace}+           ;
-.                       { fprintf(stderr, "%d: Error: %s\n",yylloc.first_line, yytext); exit(1); }
+.                       { fprintf(stderr, "%d,%d: lexer error: %s\n",yylloc.first_line, yylloc.first_column, yytext); exit(1); }

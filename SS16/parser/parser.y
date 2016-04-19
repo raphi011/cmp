@@ -19,89 +19,100 @@
 %locations
 
 %start program
-%token <name> IDENT
+%token <name> ID
 %token <val> NUM
-%token END RETURN VAR DO CONTINUE BREAK OR NOT
-%right '='
+%token END RETURN VAR DO CONTINUE BREAK OR NOT ASSIGN GUARD
+%right ASSIGN
 
 %%
 
 program : 
-        | program def ';'
+        | program funcdef ';'
         ;
 
-        
-
-def     : IDENT '=' lambda
+funcdef : ID '(' pars ')' stats END
         ;
 
+pars    : 
+        | ID
+        | ID ',' pars
+        ;
 
-lambda  : FUN IDENT ASSIGN expr END
-        ;  
+stats   :
+        | stat ';'
+        | stats stat ';'
+        ;
 
-
-expr    : IF expr THEN expr ELSE expr END
-        | lambda
-        | LET IDENT '=' expr IN expr END
+stat    : RETURN expr
+        | dostat
+        | VAR ID ASSIGN expr
+        | lexpr ASSIGN expr
         | term
-        | builtins term
+        ;
+
+dostat  : ID ':' DO guardeds END
+        | DO guardeds END
+        ;
+
+guardeds:
+        | guarded ';'
+        | guardeds guarded ';'
+        ;
+
+guarded : expr GUARD stats CONTINUE
+        | expr GUARD stats CONTINUE ID
+        | expr GUARD stats BREAK 
+        | expr GUARD stats BREAK ID
+        ;
+
+lexpr   : ID
+        | term '^'
+        ;
+
+expr    : term
+        | unary term
+        | term '^' 
         | plus term
-        | minus term
         | mult term
-        | and term
-        | dot term
-        | lower term
-        | equals term 
-        | expr term
+        | or term
+        | term '<' term
+        | term '=' term
         ;
 
-plus    : term '+'
-        | plus term '+'
+exprs   : 
+        | expr
+        | expr ',' exprs  
         ;
 
-minus   : term '-'
+unary   : '-'
+        | '-' unary
+        | NOT
+        | NOT unary
+        ;
+
+
+or      : term OR
+        | or term OR
         ;
 
 mult    : term '*'
         | mult term '*'
         ;
 
-and     : term AND 
-        | and term AND
-        ;
-
-dot     : term '.' 
-        | dot term '.'
-        ;
-
-lower   : term '<'
-        ;
-
-equals  : term '='
-        ;
-
-builtins : builtin
-         | builtins builtin
-         ;
-
-builtin : NOT 
-        | HEAD 
-        | TAIL 
-        | ISNUM 
-        | ISLIST 
-        | ISFUN 
+plus    : term '+'
+        | plus term '+'
         ;
 
 term    : '(' expr ')'
         | NUM
-        | IDENT
+        | ID
+        | ID '(' exprs ')'
         ;
-
-
+ 
 %% 
 
 void yyerror(const char *s) {
-    fprintf(stderr, "%d: Error: %s\n", yylloc.first_line, s);
+    fprintf(stderr, "%d,%d: parser error: %s\n", yylloc.first_line, yylloc.first_column, s);
     error_count++;
 }
 
