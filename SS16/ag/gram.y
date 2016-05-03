@@ -102,14 +102,10 @@ dostat  : ID COLON DO guardeds END
         ;
 
 guardeds:
-        | guarded SEMICOLON
+        | guarded SEMICOLON guardeds 
         @{
-            @i @guarded.vars@ = @guardeds.vars@;
-        @}
-        | guardeds guarded SEMICOLON
-        @{
-            @i @guardeds.1.vars@ = @guardeds.0.vars@;
-            @i @guarded.vars@ = @guardeds.1.vars@;
+            @i @guarded.vars@ = @guardeds.0.vars@;
+            @i @guardeds.1.vars@ = @guarded.0.vars@;
         @}
         ;
 
