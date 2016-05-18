@@ -1,15 +1,10 @@
-@attributes { char *name; } ID
-@attributes { int val; } NUM
-@attributes { struct symbol* vars; } stats pars dostat expr exprs lexpr term guarded guardeds or mult plus unary
-@attributes { struct symbol* vars; struct symbol* vars_new; } stat 
-
-@traversal @postorder t
-
 %{
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
+
     #include "symbol_table.h"
+    #include "code_gen.h"
     
     #define YYDEBUG 1
 
@@ -20,12 +15,6 @@
 
 %}
 
-%union {
-    double val;
-    const char *name;
-}
-
-
 %start program
 %token END RETURN VAR DO CONTINUE BREAK OR NOT MINUS ASSIGN GUARD
 %token SEMICOLON BRACKET_LEFT BRACKET_RIGHT COMMA COLON MULTIPLICATION PLUS LOWER EQUALS CIRCUMFLEX
@@ -33,14 +22,40 @@
 %token <val> NUM
 %token <name> ID
 
+@attributes { char *name; } ID
+@attributes { int val; } NUM
+@attributes { treenode *node; } funcdef
+@attributes { struct symbol* vars; } pars dostat exprs lexpr guarded guardeds or mult unary
+@attributes { struct symbol* vars; treenode *node; } stats expr plus term
+@attributes { struct symbol* vars; treenode *node; struct symbol* vars_new; } stat 
+
+@traversal @postorder t
+@traversal @preorder cmp
+
+%union {
+    double val;
+    const char *name;
+}
+
 %%
 
-program : 
-        | program funcdef SEMICOLON
+program : funcdefs
+        @{
+            @cmp printf(".text\n");
+        @}
         ;
 
-funcdef : ID BRACKET_LEFT pars BRACKET_RIGHT stats END
-        @{  @i @stats.vars@ = @pars.vars@; @}
+funcdefs: funcdef funcdefs
+        |
+        ;
+
+funcdef : ID BRACKET_LEFT pars BRACKET_RIGHT stats END SEMICOLON
+        @{  
+            @i @stats.vars@ = @pars.vars@; 
+            @i @funcdef.node@ = code_op(C_FUNC, @stats.node@, NULL);
+
+            @cmp code_func(@ID.name@);
+        @}
         ;
 
 pars    : 
@@ -56,10 +71,17 @@ pars    :
         ;
 
 stats   :
+        @{
+            @i @stats.node@ = NULL;
+        @}
         | stat SEMICOLON stats    
         @{
             @i @stat.vars@ = @stats.0.vars@;
             @i @stats.1.vars@ = @stat.vars_new@;
+
+            @i @stats.node@ = @stat.node@;
+
+            @cmp burm_label(@stat.node@); burm_reduce(@stat.node@, 1);
         @}
         ;
 
@@ -67,27 +89,37 @@ stat    : RETURN expr
         @{
             @i @expr.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
+
+            @i @stat.node@ = code_op(C_RET, @expr.node@, NULL);
         @} 
         | dostat
         @{
             @i @dostat.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
+
+            @i @stat.node@ = NULL;
         @}
         | VAR ID ASSIGN expr
         @{
             @i @expr.vars@ = @stat.vars@;
             @i @stat.vars_new@ = symbol_table_add(@stat.vars@, @ID.name@, variable);
+
+            @i @stat.node@ = NULL;
         @}
         | lexpr ASSIGN expr
         @{
             @i @lexpr.vars@ = @stat.vars@;
             @i @expr.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
+
+            @i @stat.node@ = NULL;
         @}
         | term
         @{
             @i @term.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
+
+            @i @stat.node@ = NULL;
         @}
         ;
 
@@ -140,24 +172,48 @@ lexpr   : ID
         ;
 
  expr   : unary
-        @{ @i  @unary.vars@ = @expr.vars@; @}
+        @{ 
+            @i  @unary.vars@ = @expr.vars@; 
+            
+            @i @expr.node@ = NULL;
+        @}
         | term CIRCUMFLEX 
-        @{ @i  @term.vars@ = @expr.vars@; @}
+        @{ 
+            @i  @term.vars@ = @expr.vars@; 
+        
+            @i @expr.node@ = NULL;
+        @}
         | plus
-        @{ @i  @plus.vars@ = @expr.vars@; @}
+        @{ 
+            @i  @plus.vars@ = @expr.vars@; 
+
+            @i @expr.node@ = @plus.node@;
+        @}
         | mult
-        @{ @i  @mult.vars@ = @expr.vars@; @}
+        @{ 
+            @i  @mult.vars@ = @expr.vars@; 
+        
+            @i @expr.node@ = NULL;
+        @}
         | or
-        @{ @i  @or.vars@ = @expr.vars@; @}
+        @{ 
+            @i  @or.vars@ = @expr.vars@; 
+        
+            @i @expr.node@ = NULL;
+        @}
         | term LOWER term
         @{
             @i  @term.0.vars@ = @expr.vars@; 
             @i  @term.1.vars@ = @expr.vars@; 
+
+            @i @expr.node@ = NULL;
         @}
         | term EQUALS term
         @{
             @i  @term.0.vars@ = @expr.vars@; 
             @i  @term.1.vars@ = @expr.vars@; 
+
+            @i @expr.node@ = NULL;
         @}
         ;
 
@@ -208,21 +264,40 @@ plus    : term PLUS term
         @{ 
             @i  @term.0.vars@ = @plus.vars@; 
             @i  @term.1.vars@ = @term.0.vars@; 
+
+            @i @plus.node@ = code_op(C_ADD, @term.0.node@, @term.1.node@);
         @}
         | plus PLUS term
         @{
             @i  @plus.1.vars@ = @plus.0.vars@; 
             @i  @term.vars@ = @plus.1.vars@; 
+
+            @i @plus.node@ = NULL;
         @}
         ;
 
 term    : BRACKET_LEFT expr BRACKET_RIGHT
-        @{ @i  @expr.vars@ = @term.vars@; @}
+        @{ 
+            @i  @expr.vars@ = @term.vars@; 
+
+            @i @term.node@ = NULL;
+        @}
         | NUM
+        @{ 
+            @i @term.node@ = code_num(@NUM.val@);
+        @}
         | ID
-        @{ @t  if (!symbol_table_exists_type(@term.vars@, @ID.name@, variable)) exit(EXIT_ERROR); @}
+        @{
+            @t  if (!symbol_table_exists_type(@term.vars@, @ID.name@, variable)) exit(EXIT_ERROR); 
+            
+            @i @term.node@ = NULL;
+        @}
         | ID BRACKET_LEFT exprs BRACKET_RIGHT 
-        @{ @i  @exprs.vars@ = @term.vars@; @}
+        @{ 
+            @i  @exprs.vars@ = @term.vars@; 
+
+            @i @term.node@ = NULL;
+        @}
         ;
  
 %% 

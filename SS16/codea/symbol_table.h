@@ -11,7 +11,6 @@ struct symbol {
     struct symbol *next; 
 };
 
-
 #define EXIT_ERROR (3)
 
 void symbol_table_print(struct symbol*);

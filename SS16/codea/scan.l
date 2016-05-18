@@ -2,6 +2,8 @@
     #include "oxout.tab.h"
     #include <string.h>
     #include <stdlib.h>
+
+    #include "code_gen.h"
 %}
 
 %option yylineno
