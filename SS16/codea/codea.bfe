@@ -1,0 +1,25 @@
+%{
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#define CODE
+
+#include "code_gen.h"
+
+%}
+
+%start stat 
+
+%term C_RETURN=1 C_ADD=2 C_MULT=3 C_SUB=4 C_OR=5 C_NOT=6 C_LESS=7 C_EQ=8 C_NUM=9 C_FUNC=10 C_RET=11
+
+%%
+
+stat: return                        # 0 # 
+
+return: C_RET(expr)                 # 1 # code_ret(LEFT_VAL(bnode)); 
+
+expr: C_ADD(C_NUM, C_NUM)           # 1 # bnode->val = LEFT_VAL(bnode) + RIGHT_VAL(bnode);
+
+%%
