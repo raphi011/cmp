@@ -11,6 +11,9 @@
     int yylex();
     void yyerror(const char *s);
     
+    void burm_reduce(NODEPTR_TYPE, int);
+    void burm_label(NODEPTR_TYPE);
+
     int error_count = 0;
 
 %}
