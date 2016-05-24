@@ -24,6 +24,25 @@ treenode* code_num(int num) {
     return node;
 }
 
+treenode* code_id(char *name) {
+    treenode *node = code_op(C_ID, NULL, NULL);
+
+    node->name = name;
+
+    return node;
+}
+
+void code_init_pars(struct symbol *syms) {
+    char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+    int i = 0;
+
+    struct symbol *next = syms;
+
+    while (next != NULL) {
+        next->reg = strdup(regs[i++]);
+        next = next->next;
+    }
+}
 
 void code_func(char* name) {
     printf(".globl %1$s\n.type %1$s, @function\n%1$s:\n", name);

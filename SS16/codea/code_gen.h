@@ -1,6 +1,8 @@
 #ifndef CODE_H_
 #define CODE_H_
 
+#include "symbol_table.h"
+
 enum {
 C_RETURN=1,
 C_ADD=2, 
@@ -12,7 +14,8 @@ C_LESS=7,
 C_EQ=8,
 C_NUM=9,
 C_FUNC=10,
-C_RET=11
+C_RET=11,
+C_ID=12
 };
 
 
@@ -43,6 +46,7 @@ typedef treenode *treenodep;
 
 treenode* code_op(int, treenode*, treenode*);
 treenode* code_num(int);
+treenode* code_id(char *);
 
 void code_ret(int);
 void code_func(char *);
@@ -53,5 +57,6 @@ void code_or(char *, char *);
 void code_not(char *, char *);
 void code_less(char *, char *);
 void code_eq(char *, char *);
+void code_init_pars(struct symbol *);
 
 #endif

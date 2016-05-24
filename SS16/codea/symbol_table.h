@@ -7,6 +7,7 @@ enum symbol_type {
 
 struct symbol {
     char *name;
+    char *reg;
     enum symbol_type type;
     struct symbol *next; 
 };

@@ -103,6 +103,7 @@ struct symbol* symbol_table_clone(struct symbol* table) {
         current = current->next;
         current->type = table->type;
         current->name = strdup(table->name);
+        current->reg = strdup(table->reg);
     }
 
     return clone;

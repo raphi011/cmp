@@ -57,6 +57,7 @@ funcdef : ID BRACKET_LEFT pars BRACKET_RIGHT stats END SEMICOLON
             @i @stats.vars@ = @pars.vars@; 
             @i @funcdef.node@ = code_op(C_FUNC, @stats.node@, NULL);
 
+            @cmp code_init_pars(@pars.vars@);
             @cmp code_func(@ID.name@);
         @}
         ;
@@ -293,7 +294,7 @@ term    : BRACKET_LEFT expr BRACKET_RIGHT
         @{
             @t  if (!symbol_table_exists_type(@term.vars@, @ID.name@, variable)) exit(EXIT_ERROR); 
             
-            @i @term.node@ = NULL;
+            @i @term.node@ = code_id(@ID.name@);
         @}
         | ID BRACKET_LEFT exprs BRACKET_RIGHT 
         @{ 
