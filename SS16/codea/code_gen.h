@@ -26,19 +26,26 @@ C_ID=12
 typedef struct s_node {
     int         op;
     struct s_node *kids[2];
+
     STATEPTR_TYPE state;
-    char*           name;
-    int             val;
+
+    char *name; 
+    char *reg;
+    int val;
+
 } treenode;
 
 typedef treenode *treenodep;
 
 #define NAME(p)         ((p)->name)
+#define REG(p)          ((p)->reg)
 #define OP_LABEL(p)     ((p)->op)
 #define LEFT_CHILD(p)   ((p)->kids[0])
 #define RIGHT_CHILD(p)  ((p)->kids[1])
 #define LEFT_VAL(p)     (LEFT_CHILD(p)->val)
 #define RIGHT_VAL(p)    (RIGHT_CHILD(p)->val)
+#define LEFT_REG(p)     (REG(LEFT_CHILD(p)))
+#define RIGHT_REG(p)    (REG(RIGHT_CHILD(p)))
 #define STATE_LABEL(p)  ((p)->state)
 #define PANIC           printf
 #define NODEPTR_TYPE    treenodep
@@ -46,17 +53,23 @@ typedef treenode *treenodep;
 
 treenode* code_op(int, treenode*, treenode*);
 treenode* code_num(int);
-treenode* code_id(char *);
+treenode* code_id(char *, struct symbol*);
 
-void code_ret(int);
+char* code_get_reg();
+
+void code_ret_const(int);
+void code_ret(char *);
 void code_func(char *);
-void code_add(char *, char *);
-void code_mult(char *, char *);
-void code_minus(char *, char *);
-void code_or(char *, char *);
-void code_not(char *, char *);
-void code_less(char *, char *);
-void code_eq(char *, char *);
-void code_init_pars(struct symbol *);
+
+char* code_add(char *, char *);
+char* code_mult(char *, char *);
+char* code_or(char *, char *);
+char* code_not(char *);
+char* code_minus(char *);
+char* code_less(char *, char *);
+char* code_eq(char *, char *);
+
+struct symbol* code_init_pars(struct symbol *);
+void code_init_vars(struct symbol *);
 
 #endif

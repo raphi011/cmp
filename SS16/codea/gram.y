@@ -28,11 +28,11 @@
 @attributes { char *name; } ID
 @attributes { int val; } NUM
 @attributes { treenode *node; } funcdef
-@attributes { struct symbol* vars; } pars dostat exprs lexpr guarded guardeds or mult unary
-@attributes { struct symbol* vars; treenode *node; } stats expr plus term
+@attributes { struct symbol* vars; } pars dostat exprs lexpr guarded guardeds or mult 
+@attributes { struct symbol* vars; treenode *node; } stats expr plus term unary
 @attributes { struct symbol* vars; treenode *node; struct symbol* vars_new; } stat 
 
-@traversal @postorder t
+@traversal @preorder t
 @traversal @preorder cmp
 
 %union {
@@ -54,10 +54,10 @@ funcdefs: funcdef funcdefs
 
 funcdef : ID BRACKET_LEFT pars BRACKET_RIGHT stats END SEMICOLON
         @{  
-            @i @stats.vars@ = @pars.vars@; 
+            @i @stats.vars@ = code_init_pars(@pars.vars@); 
             @i @funcdef.node@ = code_op(C_FUNC, @stats.node@, NULL);
 
-            @cmp code_init_pars(@pars.vars@);
+            @cmp code_init_vars(@pars.vars@);
             @cmp code_func(@ID.name@);
         @}
         ;
@@ -179,7 +179,7 @@ lexpr   : ID
         @{ 
             @i  @unary.vars@ = @expr.vars@; 
             
-            @i @expr.node@ = NULL;
+            @i @expr.node@ = @unary.node@;
         @}
         | term CIRCUMFLEX 
         @{ 
@@ -232,11 +232,23 @@ exprs   :
         ;
 
 unary   : MINUS unary
-        @{ @i  @unary.1.vars@ = @unary.0.vars@; @}
+        @{ 
+            @i  @unary.1.vars@ = @unary.0.vars@; 
+
+            @i  @unary.0.node@ = code_op(C_MINUS, @unary.1.node@, NULL);
+        @}
         | NOT unary
-        @{ @i  @unary.1.vars@ = @unary.0.vars@; @}
+        @{ 
+            @i  @unary.1.vars@ = @unary.0.vars@; 
+            
+            @i  @unary.0.node@ = code_op(C_NOT, @unary.1.node@, NULL);
+        @}
         | term
-        @{ @i  @term.vars@ = @unary.vars@; @}
+        @{ 
+            @i  @term.vars@ = @unary.vars@; 
+
+            @i  @unary.node@ = @term.node@;
+        @}
         ;
 
 
@@ -282,9 +294,9 @@ plus    : term PLUS term
 
 term    : BRACKET_LEFT expr BRACKET_RIGHT
         @{ 
-            @i  @expr.vars@ = @term.vars@; 
+            @i @expr.vars@ = @term.vars@; 
 
-            @i @term.node@ = NULL;
+            @i @term.node@ = @expr.node@;
         @}
         | NUM
         @{ 
@@ -292,13 +304,13 @@ term    : BRACKET_LEFT expr BRACKET_RIGHT
         @}
         | ID
         @{
-            @t  if (!symbol_table_exists_type(@term.vars@, @ID.name@, variable)) exit(EXIT_ERROR); 
+            @t if (!symbol_table_exists_type (@term.vars@, @ID.name@, variable)) exit (EXIT_ERROR); 
             
-            @i @term.node@ = code_id(@ID.name@);
+            @i @term.node@ = code_id (@ID.name@, symbol_table_get (@term.vars@, @ID.name@));
         @}
         | ID BRACKET_LEFT exprs BRACKET_RIGHT 
         @{ 
-            @i  @exprs.vars@ = @term.vars@; 
+            @i @exprs.vars@ = @term.vars@; 
 
             @i @term.node@ = NULL;
         @}

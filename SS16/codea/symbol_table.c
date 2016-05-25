@@ -53,21 +53,22 @@ void symbol_table_print(struct symbol* table) {
     printf("\n");
 }
 
-bool symbol_table_exists(struct symbol* table, char *name) {
+struct symbol *symbol_table_get(struct symbol* table, char *name) {
     struct symbol *next = table;
-
-    
 
     while (next != NULL) {
         if (0 == strcmp(next->name, name)) {
-            return true;
+            return next;
         } else {
             next = next->next;  
         }
     }
 
+    return NULL;
+}
 
-    return false;
+bool symbol_table_exists (struct symbol* table, char *name) {
+    return symbol_table_get (table, name) != NULL;
 }
 
 bool symbol_table_exists_type(struct symbol* table, char *name, enum symbol_type type) {
