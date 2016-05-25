@@ -15,7 +15,8 @@ C_EQ=8,
 C_NUM=9,
 C_FUNC=10,
 C_RET=11,
-C_ID=12
+C_ID=12,
+C_MEM=13
 };
 
 
@@ -39,6 +40,8 @@ typedef treenode *treenodep;
 
 #define NAME(p)         ((p)->name)
 #define REG(p)          ((p)->reg)
+#define VAL(p)          ((p)->val)
+#define HAS_REG(p)      ((p)->reg != NULL)
 #define OP_LABEL(p)     ((p)->op)
 #define LEFT_CHILD(p)   ((p)->kids[0])
 #define RIGHT_CHILD(p)  ((p)->kids[1])
@@ -58,16 +61,18 @@ treenode* code_id(char *, struct symbol*);
 char* code_get_reg();
 
 void code_ret_const(int);
-void code_ret(char *);
+void code_ret(treenode *);
 void code_func(char *);
 
-char* code_add(char *, char *);
-char* code_mult(char *, char *);
-char* code_or(char *, char *);
-char* code_not(char *);
-char* code_minus(char *);
-char* code_less(char *, char *);
-char* code_eq(char *, char *);
+char* code_add(treenode *, treenode *);
+char* code_mult(treenode *, treenode *);
+char* code_or(treenode *, treenode*);
+char* code_less(treenode *, treenode*);
+char* code_eq(treenode *, treenode *);
+
+char* code_not(treenode*);
+char* code_minus(treenode*);
+char* code_mem(treenode*);
 
 struct symbol* code_init_pars(struct symbol *);
 void code_init_vars(struct symbol *);

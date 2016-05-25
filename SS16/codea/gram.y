@@ -28,8 +28,8 @@
 @attributes { char *name; } ID
 @attributes { int val; } NUM
 @attributes { treenode *node; } funcdef
-@attributes { struct symbol* vars; } pars dostat exprs lexpr guarded guardeds or mult 
-@attributes { struct symbol* vars; treenode *node; } stats expr plus term unary
+@attributes { struct symbol* vars; } pars dostat exprs lexpr guarded guardeds
+@attributes { struct symbol* vars; treenode *node; } stats expr plus term unary or mult
 @attributes { struct symbol* vars; treenode *node; struct symbol* vars_new; } stat 
 
 @traversal @preorder t
@@ -177,7 +177,7 @@ lexpr   : ID
 
  expr   : unary
         @{ 
-            @i  @unary.vars@ = @expr.vars@; 
+            @i @unary.vars@ = @expr.vars@; 
             
             @i @expr.node@ = @unary.node@;
         @}
@@ -185,7 +185,7 @@ lexpr   : ID
         @{ 
             @i  @term.vars@ = @expr.vars@; 
         
-            @i @expr.node@ = NULL;
+            @i @expr.node@ = code_op(C_MEM, @term.node@, NULL);
         @}
         | plus
         @{ 
@@ -197,27 +197,27 @@ lexpr   : ID
         @{ 
             @i  @mult.vars@ = @expr.vars@; 
         
-            @i @expr.node@ = NULL;
+            @i @expr.node@ = @mult.node@;
         @}
         | or
         @{ 
             @i  @or.vars@ = @expr.vars@; 
         
-            @i @expr.node@ = NULL;
+            @i @expr.node@ = @or.node@;
         @}
         | term LOWER term
         @{
             @i  @term.0.vars@ = @expr.vars@; 
             @i  @term.1.vars@ = @expr.vars@; 
 
-            @i @expr.node@ = NULL;
+            @i @expr.node@ = code_op(C_LESS, @term.0.node@, @term.1.node@);
         @}
         | term EQUALS term
         @{
             @i  @term.0.vars@ = @expr.vars@; 
             @i  @term.1.vars@ = @expr.vars@; 
 
-            @i @expr.node@ = NULL;
+            @i @expr.node@ = code_op(C_EQ, @term.0.node@, @term.1.node@);
         @}
         ;
 
@@ -256,11 +256,15 @@ or      : term OR term
         @{ 
             @i  @term.0.vars@ = @or.vars@; 
             @i  @term.1.vars@ = @term.0.vars@; 
+
+            @i @or.node@ = code_op(C_OR, @term.0.node@, @term.1.node@);
         @}
         | or OR term
         @{
             @i  @or.1.vars@ = @or.0.vars@; 
             @i  @term.vars@ = @or.1.vars@; 
+
+            @i @or.0.node@ = code_op(C_OR, @or.1.node@, @term.node@);
         @}
         ;
 
@@ -268,11 +272,15 @@ mult    : term MULTIPLICATION term
         @{ 
             @i  @term.0.vars@ = @mult.vars@; 
             @i  @term.1.vars@ = @term.0.vars@; 
+
+            @i @mult.node@ = code_op(C_MULT, @term.0.node@, @term.1.node@);
         @}
         | mult MULTIPLICATION term
         @{
             @i  @mult.1.vars@ = @mult.0.vars@; 
             @i  @term.vars@ = @mult.1.vars@; 
+
+            @i @mult.0.node@ = code_op(C_MULT, @mult.1.node@, @term.node@);
         @}
         ;
 
@@ -288,7 +296,7 @@ plus    : term PLUS term
             @i  @plus.1.vars@ = @plus.0.vars@; 
             @i  @term.vars@ = @plus.1.vars@; 
 
-            @i @plus.node@ = NULL;
+            @i @plus.0.node@ = code_op(C_ADD, @plus.1.node@, @term.node@);
         @}
         ;
 
@@ -304,7 +312,6 @@ term    : BRACKET_LEFT expr BRACKET_RIGHT
         @}
         | ID
         @{
-            @t if (!symbol_table_exists_type (@term.vars@, @ID.name@, variable)) exit (EXIT_ERROR); 
             
             @i @term.node@ = code_id (@ID.name@, symbol_table_get (@term.vars@, @ID.name@));
         @}
