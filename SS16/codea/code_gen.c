@@ -63,7 +63,8 @@ treenode* code_id (char *name, struct symbol *symbols) {
     return node;
 }
 
-#define MAX_REG (8)
+#define MAX_REG (9)
+#define MAX_PARAMS (6)
 
 char* reg_avail[MAX_REG];
 int reg_used[MAX_REG];
@@ -92,7 +93,7 @@ void code_init_vars (struct symbol *pars) {
     reg_avail[1] = "r10"; 
     reg_avail[2] = "r11"; 
 
-    while (i < MAX_REG) {
+    while (i < MAX_PARAMS) {
         reg_avail[j++] = regs[i++];
     }
 }
@@ -104,6 +105,7 @@ struct symbol* code_init_pars (struct symbol *pars) {
 
     while (next != NULL) {
         next->reg = strdup(regs[i++]);
+        reg_used[i] = 1;
         next = next->next;
     }
 
@@ -115,13 +117,18 @@ char* code_get_reg (void) {
     int i;
 
     for (i = 0; i < MAX_REG; i++) {
+        if (reg_avail[i] == 0) {
+            break;
+        }
         if (!reg_used[i]) {
             reg_used[i] = 1;
             return strdup (reg_avail[i]);
         }
     }
 
-    return NULL;
+    printf("Out of registers\n");
+    exit(4);
+    //return NULL;
 }
 
 
