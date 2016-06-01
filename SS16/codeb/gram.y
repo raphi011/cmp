@@ -4,8 +4,9 @@
     #include <string.h>
 
     #include "symbol_table.h"
-    #include "code_gen.h"
+    #include "code.h"
     #include "regs.h"
+    #include "asm.h"
     
     #define YYDEBUG 1
 
@@ -29,7 +30,8 @@
 @attributes { char *name; } ID
 @attributes { int val; } NUM
 @attributes { treenode *node; } funcdef
-@attributes { struct symbol* vars; } pars dostat exprs lexpr guarded guardeds
+@attributes { struct symbol* vars; } dostat exprs lexpr guarded guardeds
+@attributes { struct symbol* pars; } pars
 @attributes { struct symbol* vars; treenode *node; } stats expr plus term unary or mult
 @attributes { struct symbol* vars; treenode *node; struct symbol* vars_new; } stat 
 
@@ -55,23 +57,22 @@ funcdefs: funcdef funcdefs
 
 funcdef : ID BRACKET_LEFT pars BRACKET_RIGHT stats END SEMICOLON
         @{  
-            @i @stats.vars@ = regs_init_pars (@pars.vars@); 
+            @i @stats.vars@ = regs_init_vars (@pars.pars@); 
             @i @funcdef.node@ = code_op (C_FUNC, @stats.node@, NULL);
 
-            @cmp regs_init_vars (@pars.vars@);
-            @cmp code_func (@ID.name@);
+            @cmp asm_func (@ID.name@);
         @}
         ;
 
 pars    : 
-        @{  @i @pars.vars@ = NULL; @}
+        @{  @i @pars.pars@ = NULL; @}
         | ID
         @{
-            @i @pars.vars@ = symbol_table_add(NULL, @ID.name@, variable);
+            @i @pars.pars@ = symbol_table_add(NULL, @ID.name@, parameter);
         @}
         | ID COMMA pars
         @{
-            @i @pars.0.vars@ = symbol_table_add(@pars.1.vars@, @ID.name@, variable);
+            @i @pars.0.pars@ = symbol_table_add(@pars.1.pars@, @ID.name@, parameter);
         @}
         ;
 
@@ -109,7 +110,7 @@ stat    : RETURN expr
             @i @expr.vars@ = @stat.vars@;
             @i @stat.vars_new@ = symbol_table_add(@stat.vars@, @ID.name@, variable);
 
-            @i @stat.node@ = NULL;
+            @i @stat.node@ = code_assign(@expr.node@, @ID.name@, @stat.vars_new@);
         @}
         | lexpr ASSIGN expr
         @{
@@ -171,9 +172,13 @@ guarded : expr GUARD stats CONTINUE
         ;
 
 lexpr   : ID
-        @{ @t  if (!symbol_table_exists_type(@lexpr.vars@, @ID.name@, variable)) exit(EXIT_ERROR); @}
+        @{ @t  if (!symbol_table_exists_type(@lexpr.vars@, @ID.name@, variable | parameter)) exit(EXIT_ERROR); @}
         | term CIRCUMFLEX
-        @{ @i  @term.vars@ = @lexpr.vars@; @}
+        @{ 
+            @i  @term.vars@ = @lexpr.vars@;
+
+            //@i @expr.node@ = code_op(C_MEM_WRITE, @term.node@, NULL);
+        @}
         ;
 
  expr   : unary
@@ -186,7 +191,7 @@ lexpr   : ID
         @{ 
             @i  @term.vars@ = @expr.vars@; 
         
-            @i @expr.node@ = code_op(C_MEM, @term.node@, NULL);
+            @i @expr.node@ = code_op(C_MEM_READ, @term.node@, NULL);
         @}
         | plus
         @{ 

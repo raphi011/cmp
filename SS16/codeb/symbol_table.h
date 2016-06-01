@@ -4,8 +4,9 @@
 #include <stdbool.h>
 
 enum symbol_type {
-    label,
-    variable
+    label = 1,
+    variable = 2,
+    parameter = 4
 };
 
 struct symbol {
@@ -22,7 +23,7 @@ struct symbol *symbol_table_get(struct symbol*, char*);
 struct symbol* symbol_table_add(struct symbol*, char*, enum symbol_type);
 struct symbol* symbol_table_merge(struct symbol*, struct symbol*);
 bool symbol_table_exists(struct symbol*, char*);
-bool symbol_table_exists_type(struct symbol*, char*, enum symbol_type);
+bool symbol_table_exists_type(struct symbol*, char*, int);
 struct symbol* symbol_table_clone(struct symbol*);
 
 #endif

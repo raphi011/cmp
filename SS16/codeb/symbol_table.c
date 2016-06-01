@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #include "symbol_table.h"
-
+#include "regs.h"
 
 struct symbol *symbol_table_add(struct symbol* table, char *name, enum symbol_type type) {
     if (symbol_table_exists(table,name)) { 
@@ -18,6 +18,10 @@ struct symbol *symbol_table_add(struct symbol* table, char *name, enum symbol_ty
     new_entry->name = name;
     new_entry->next = new;
     new_entry->type = type;
+
+    if (type == variable) {
+        new_entry->reg = regs_new_var();
+    }
 
     return new_entry;
 }
@@ -71,13 +75,14 @@ bool symbol_table_exists (struct symbol* table, char *name) {
     return symbol_table_get (table, name) != NULL;
 }
 
-bool symbol_table_exists_type(struct symbol* table, char *name, enum symbol_type type) {
+bool symbol_table_exists_type(struct symbol* table, char *name, int type) {
     struct symbol *next = table;
 
     while (next != NULL) {
-        if ((0 == strcmp(next->name, name)) && (next->type == type)) {
+        if ((0 == strcmp(next->name, name)) && (next->type & type)) {
             return true;
         } else {
+            printf("compaing %d with %d and %s with %s failed", next->type, type, next->name, name);
             next = next->next;  
         }
     }
@@ -104,6 +109,9 @@ struct symbol* symbol_table_clone(struct symbol* table) {
         current = current->next;
         current->type = table->type;
         current->name = strdup(table->name);
+        if (table->reg) {
+            current->reg = strdup(table->reg);
+        }
     }
 
     return clone;

@@ -9,7 +9,7 @@ SSH = ssh
 RSYNC = rsync
 
 TARGET = codeb
-SOURCE = Makefile scan.l gram.y symbol_table.c symbol_table.h code_gen.c code_gen.h codeb.bfe regs.c regs.h
+SOURCE = Makefile scan.l gram.y symbol_table.c symbol_table.h code.c code.h codeb.bfe regs.c regs.h asm.c asm.h
 
 HOST = ueb
 REMOTEDIR = abgabe/$(TARGET)
@@ -23,7 +23,7 @@ LDFLAGS = -lfl
 
 all: $(TARGET)
 
-$(TARGET): oxout.tab.c lex.yy.c symbol_table.c symbol_table.h code_gen.c code_gen.h $(TARGET)_iburg.c
+$(TARGET): oxout.tab.c lex.yy.c symbol_table.c symbol_table.h code.c code.h $(TARGET)_iburg.c asm.c asm.h
 	$(GCC) $(GCCFLAGS) $(IGNOREWARNINGS) *.c $(LDFLAGS) -o $@  
 
 oxout.y oxout.l: gram.y scan.l

@@ -16,7 +16,9 @@ C_NUM=9,
 C_FUNC=10,
 C_RET=11,
 C_ID=12,
-C_MEM=13
+C_MEM_READ=13,
+C_ASSIGN=14,
+C_MEM_WRITE=15
 };
 
 
@@ -32,6 +34,7 @@ typedef struct s_node {
 
     char *name; 
     char *reg;
+    bool temp;
     int val;
 
 } treenode;
@@ -53,23 +56,9 @@ typedef treenode *treenodep;
 #define PANIC           printf
 #define NODEPTR_TYPE    treenodep
 
-
 treenode* code_op(int, treenode*, treenode*);
 treenode* code_num(int);
 treenode* code_id(char *, struct symbol*);
-
-void code_ret_const(int);
-void code_ret(treenode *);
-void code_func(char *);
-
-char* code_add(treenode *, treenode *);
-char* code_mult(treenode *, treenode *);
-char* code_or(treenode *, treenode*);
-char* code_less(treenode *, treenode*);
-char* code_eq(treenode *, treenode *);
-
-char* code_not(treenode*);
-char* code_minus(treenode*);
-char* code_mem(treenode*);
+treenode* code_assign(treenode *, char *, struct symbol *);
 
 #endif

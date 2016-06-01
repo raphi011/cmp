@@ -13,13 +13,13 @@ bool reg_used[MAX_REG];
 
 char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 
-void regs_init_vars (struct symbol *pars) {
+struct symbol* regs_init_vars (struct symbol *pars) {
     int i = 0, j = 0;
+    struct symbol *next = pars;
 
-
-    while (pars != NULL) {
-        i++;
-        pars = pars->next;
+    while (next != NULL) {
+        next->reg = strdup(regs[i++]);
+        next = next->next;
     }
 
     while (j < MAX_REG) {
@@ -37,28 +37,40 @@ void regs_init_vars (struct symbol *pars) {
     while (i < MAX_PARAMS) {
         reg_avail[j++] = regs[i++];
     }
-}
-
-struct symbol* regs_init_pars (struct symbol *pars) {
-    int i = 0;
-
-    struct symbol *next = pars;
-
-    while (next != NULL) {
-        next->reg = strdup(regs[i++]);
-        next = next->next;
-    }
 
     return pars;
 }
 
 bool regs_is_temp(char *r) {
+    int i;
 
-
+    for (i = 0; i < MAX_REG; i++) {
+        if (reg_avail[i] == NULL) {
+            break;
+        }
+        if (strcmp(r, reg_avail[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
+char* regs_new_var (void) {
+    int i;
 
-char* regs_new (void) {
+    for (i = MAX_REG - 1; i >= 0; i--) {
+        if (reg_avail[i] != NULL) {
+            char *reg = strdup(reg_avail[i]);
+            reg_avail[i] = NULL;
+            return reg;
+        }
+    }
+
+    printf("Out of registers\n");
+    exit(EXIT_ERROR);
+}
+
+char* regs_new_temp (void) {
     int i;
 
     for (i = 0; i < MAX_REG; i++) {
