@@ -1,0 +1,40 @@
+%{
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#define CODE
+
+#include "code_gen.h"
+
+
+%}
+
+%start stat 
+
+%term C_RETURN=1 C_ADD=2 C_MULT=3 C_MINUS=4 C_OR=5 C_NOT=6 C_LESS=7 C_EQ=8 C_NUM=9 C_FUNC=10 C_RET=11 C_ID=12 C_MEM=13
+
+%%
+
+stat: return                                # 0 # 
+
+return: C_RET(expr)                         # 1 # code_ret(LEFT_CHILD(bnode));
+
+expr: unary                                 # 0 #
+expr: C_ADD(term, term)                     # 1 # bnode->reg = code_add(LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+expr: C_MULT(term, term)                    # 1 # bnode->reg = code_mult(LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+expr: C_OR(term, term)                      # 1 # bnode->reg = code_or(LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+expr: C_LESS(term, term)                    # 1 # bnode->reg = code_less(LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+expr: C_EQ(term, term)                      # 1 # bnode->reg = code_eq(LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+
+unary: term                                 # 1 # 
+unary: C_MINUS(unary)                       # 1 # bnode->reg = code_minus(LEFT_CHILD(bnode));
+unary: C_NOT(unary)                         # 1 # bnode->reg = code_not(LEFT_CHILD(bnode));
+unary: C_MEM(term)                          # 1 # bnode->reg = code_mem(LEFT_CHILD(bnode));
+
+term: expr                                  # 1 #                     
+term: C_ID                                  # 0 #
+term: C_NUM                                 # 0 #
+
+%%
