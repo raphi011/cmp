@@ -29,10 +29,9 @@
 
 @attributes { char *name; } ID
 @attributes { int val; } NUM
-@attributes { treenode *node; } funcdef
 @attributes { struct symbol* vars; } exprs
 @attributes { struct symbol* pars; } pars
-@attributes { struct symbol* vars; treenode *node; } stats expr plus term unary or mult dostat guarded guardeds
+@attributes { struct symbol* vars; treenode *node; } expr plus term unary or mult dostat guarded guardeds stats
 @attributes { struct symbol* vars; treenode *node; struct symbol* vars_new; } stat 
 
 @traversal @preorder t
@@ -58,7 +57,6 @@ funcdefs: funcdef funcdefs
 funcdef : ID BRACKET_LEFT pars BRACKET_RIGHT stats END SEMICOLON
         @{  
             @i @stats.vars@ = regs_init_vars (@pars.pars@); 
-            @i @funcdef.node@ = code_op (C_FUNC, @stats.node@, NULL);
 
             @cmp asm_func (@ID.name@);
         @}
@@ -77,15 +75,15 @@ pars    :
         ;
 
 stats   :
-        @{
-            @i @stats.node@ = NULL;
-        @}
+	@{
+	    @i @stats.node@ = NULL;
+	@}
         | stat SEMICOLON stats    
         @{
             @i @stat.vars@ = @stats.0.vars@;
             @i @stats.1.vars@ = @stat.vars_new@;
 
-            @i @stats.node@ = @stat.node@;
+	    @i @stats.node@ = @stat.node@;
 
             @cmp burm_label(@stat.node@); burm_reduce(@stat.node@, 1);
         @}
@@ -103,8 +101,9 @@ stat    : RETURN expr
             @i @dostat.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
 
-            @i @stat.node@ = @dostat.node@;
-            
+            @i @stat.node@ = code_dostat(NULL, @dostat.node@);
+
+            @cmp @revorder(1) printf("dostat_end:\n");
         @}
         | VAR ID ASSIGN expr
         @{
@@ -143,19 +142,14 @@ dostat  : ID COLON DO guardeds END
         @{
             @i @guardeds.vars@ = symbol_table_add(@dostat.vars@, @ID.name@, label);
 
-            @i @dostat.node@ = code_dostat(@ID.name@, @guardeds.node@);
+            @i @dostat.node@ = @guardeds.node@;
 
-            @cmp printf("dostat:\n");
-            @cmp @revorder(1) printf("dostat_end:\n");
         @}
         | DO guardeds END
         @{
             @i @guardeds.vars@ = @dostat.vars@;
 
-            @i @dostat.node@ = code_dostat(NULL, @guardeds.node@);
-
-            @cmp printf("dostat:\n");
-            @cmp @revorder(1) printf("dostat_end:\n");
+            @i @dostat.node@ = @guardeds.node@;
         @}
         ;
 
@@ -168,7 +162,7 @@ guardeds:
             @i @guarded.vars@ = @guardeds.0.vars@;
             @i @guardeds.1.vars@ = @guarded.vars@;
 
-            @i @guardeds.node@ = @guarded.node@;
+            @i @guardeds.node@ = code_guarded(@guarded.node@, NULL, true);
         @}
         ;
 
@@ -177,9 +171,8 @@ guarded : expr GUARD stats CONTINUE
             @i  @expr.vars@ = @guarded.vars@;
             @i  @stats.vars@ = @guarded.vars@;
 
-            @i @guarded.node@ = code_guarded(@expr.node@, NULL, true);
+            @i @guarded.node@ = @expr.node@;
 
-            @cmp printf("guarded:\n");
             @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats CONTINUE ID
@@ -189,9 +182,8 @@ guarded : expr GUARD stats CONTINUE
             @i  @expr.vars@ = @guarded.vars@;
             @i  @stats.vars@ = @guarded.vars@;
 
-            @i @guarded.node@ = code_guarded(@expr.node@, @ID.name@, true);
+            @i @guarded.node@ = @expr.node@;
 
-            @cmp printf("guarded:\n");
             @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats BREAK 
@@ -199,9 +191,8 @@ guarded : expr GUARD stats CONTINUE
             @i  @expr.vars@ = @guarded.vars@;
             @i  @stats.vars@ = @guarded.vars@;
 
-            @i @guarded.node@ = code_guarded(@expr.node@, NULL, false);
+            @i @guarded.node@ = @expr.node@;
             
-            @cmp printf("guarded:\n");
             @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats BREAK ID
@@ -211,7 +202,7 @@ guarded : expr GUARD stats CONTINUE
             @i  @expr.vars@ = @guarded.vars@;
             @i  @stats.vars@ = @guarded.vars@;
 
-            @i @guarded.node@ = code_guarded(@expr.node@, @ID.name@, false);
+            @i @guarded.node@ = @expr.node@;
 
             @cmp printf("guarded:\n");
             @cmp @revorder(1) printf("guarded_end:\n");

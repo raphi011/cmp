@@ -18,17 +18,16 @@
 
 %%
 
-stat: term                                  # 1 #
+stat: term                                  # 0 #
 stat: C_RET(expr)                           # 1 # asm_ret(LEFT_CHILD(bnode));
-stat: C_DOSTAT(guarded)                     # 0 # 
+stat: C_DOSTAT                              # 0 # printf("dostat:\n");
+stat: C_GUARDED(expr) 		            # 0 # printf("guarded:\n");
 stat: C_MEM_WRITE(expr)                     # 0 # asm_mem_write(LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
 stat: C_ASSIGN(expr)                        # 0 # asm_move(LEFT_CHILD(bnode), bnode->reg);
 
 term: expr                                  # 1 #                     
 term: C_ID                                  # 0 #
 term: C_NUM                                 # 0 #
-
-guarded: C_GUARDED(expr)                    # 0 # 
 
 expr: unary                                 # 0 #
 expr: C_ADD(term, term)                     # 1 # bnode->reg = asm_add(LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
