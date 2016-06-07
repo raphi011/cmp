@@ -6,6 +6,10 @@
 #include "symbol_table.h"
 
 treenode* code_assign(treenode *left, char *name, struct symbol *symbols) {
+    if (!symbol_table_exists_type(symbols, name, variable | parameter)) {
+        exit(EXIT_ERROR); 
+    }
+
     treenode *node = code_op(C_ASSIGN, left, NULL);
 
     struct symbol* sym = symbol_table_get (symbols, name);
@@ -15,6 +19,14 @@ treenode* code_assign(treenode *left, char *name, struct symbol *symbols) {
     node->temp = false;
 
     return node;
+}
+
+treenode* code_dostat(char *label, treenode* guarded) {
+    return code_op(C_DOSTAT, guarded, NULL);
+}
+
+treenode* code_guarded(treenode* guard, char *label, bool cont) {
+    return code_op(C_GUARDED, guard, NULL);
 }
 
 treenode* code_op (int op, treenode *left, treenode *right) {

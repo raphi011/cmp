@@ -42,5 +42,9 @@ hand-in: $(SOURCE)
 	$(RSYNC) $(RFLAGS) $(SOURCE) $(HOST):$(REMOTEDIR)
 	$(SSH) $(HOST) 'cd $(REMOTEDIR); $(REMOTETEST) | egrep "(Test|Error)"'
 
+copy: $(SOURCE)
+	$(RSYNC) $(RFLAGS) $(SOURCE) $(HOST):$(REMOTEDIR)
+	$(SSH) $(HOST) 'cd $(REMOTEDIR); make'
+
 clean: 
 	rm -f $(TARGET) oxout.l oxout.y $(TARGET)_iburg.c oxout.tab.c oxout.tab.h lex.yy.c

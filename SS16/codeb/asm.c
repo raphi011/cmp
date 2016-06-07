@@ -19,7 +19,7 @@ static void print_code (const char *str, ...) {
     va_end(arguments);
 }
 
-static void asm_move(treenode *par, char *reg) {
+void asm_move(treenode *par, char *reg) {
     if (HAS_REG (par)) {
         print_code ("movq %%%s, %%%s", REG(par), reg);
     } else {
@@ -28,10 +28,10 @@ static void asm_move(treenode *par, char *reg) {
 }
 
 void asm_mem_write(treenode *par1, treenode *par2) {
-    if (HAS_REG (par1)) {
-        print_code ("movq %%%s, (%%%s)", REG(par1), REG(par2));
+    if (HAS_REG (par2)) {
+        print_code ("movq %%%s, (%%%s)", REG(par2), REG(par1));
     } else {
-        print_code ("movq $%d, (%%%s)", VAL(par1), REG(par2));
+        print_code ("movq $%d, (%%%s)", VAL(par2), REG(par1));
     }
 }
 

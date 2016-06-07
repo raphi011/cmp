@@ -3,7 +3,8 @@
 void asm_ret_const(int);
 void asm_ret(treenode *);
 void asm_assign(treenode *, treenode *);
-void asm_mem_write(treenode *par1, treenode *par2);
+void asm_mem_write(treenode *, treenode *);
+void asm_move(treenode *, char *);
 
 void asm_func(char *);
 

@@ -30,9 +30,9 @@
 @attributes { char *name; } ID
 @attributes { int val; } NUM
 @attributes { treenode *node; } funcdef
-@attributes { struct symbol* vars; } dostat exprs lexpr guarded guardeds
+@attributes { struct symbol* vars; } exprs
 @attributes { struct symbol* pars; } pars
-@attributes { struct symbol* vars; treenode *node; } stats expr plus term unary or mult
+@attributes { struct symbol* vars; treenode *node; } stats expr plus term unary or mult dostat guarded guardeds
 @attributes { struct symbol* vars; treenode *node; struct symbol* vars_new; } stat 
 
 @traversal @preorder t
@@ -103,7 +103,8 @@ stat    : RETURN expr
             @i @dostat.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
 
-            @i @stat.node@ = NULL;
+            @i @stat.node@ = @dostat.node@;
+            
         @}
         | VAR ID ASSIGN expr
         @{
@@ -112,38 +113,62 @@ stat    : RETURN expr
 
             @i @stat.node@ = code_assign(@expr.node@, @ID.name@, @stat.vars_new@);
         @}
-        | lexpr ASSIGN expr
+        | ID ASSIGN expr
         @{
-            @i @lexpr.vars@ = @stat.vars@;
+            @t if (!symbol_table_exists_type(@stat.vars@, @ID.name@, variable | parameter)) exit(EXIT_ERROR); 
+
             @i @expr.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
 
-            @i @stat.node@ = NULL;
+            @i @stat.node@ = code_assign(@expr.node@, @ID.name@, @stat.vars_new@);
+        @}
+        | term CIRCUMFLEX ASSIGN expr
+        @{
+            @i @term.vars@ = @stat.vars@;
+            @i @expr.vars@ = @stat.vars@;
+            @i @stat.vars_new@ = @stat.vars@;
+                
+            @i @stat.node@ = code_op(C_MEM_WRITE, @term.node@, @expr.node@);
         @}
         | term
         @{
             @i @term.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
 
-            @i @stat.node@ = NULL;
+            @i @stat.node@ = @term.node@;
         @}
         ;
 
 dostat  : ID COLON DO guardeds END
         @{
             @i @guardeds.vars@ = symbol_table_add(@dostat.vars@, @ID.name@, label);
+
+            @i @dostat.node@ = code_dostat(@ID.name@, @guardeds.node@);
+
+            @cmp printf("dostat:\n");
+            @cmp @revorder(1) printf("dostat_end:\n");
         @}
         | DO guardeds END
         @{
             @i @guardeds.vars@ = @dostat.vars@;
+
+            @i @dostat.node@ = code_dostat(NULL, @guardeds.node@);
+
+            @cmp printf("dostat:\n");
+            @cmp @revorder(1) printf("dostat_end:\n");
         @}
         ;
 
 guardeds:
+        @{
+            @i @guardeds.node@ = NULL;
+        @}
         | guarded SEMICOLON guardeds 
         @{
             @i @guarded.vars@ = @guardeds.0.vars@;
-            @i @guardeds.1.vars@ = @guarded.0.vars@;
+            @i @guardeds.1.vars@ = @guarded.vars@;
+
+            @i @guardeds.node@ = @guarded.node@;
         @}
         ;
 
@@ -151,33 +176,45 @@ guarded : expr GUARD stats CONTINUE
         @{
             @i  @expr.vars@ = @guarded.vars@;
             @i  @stats.vars@ = @guarded.vars@;
+
+            @i @guarded.node@ = code_guarded(@expr.node@, NULL, true);
+
+            @cmp printf("guarded:\n");
+            @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats CONTINUE ID
         @{
             @t  if (!symbol_table_exists_type(@guarded.vars@, @ID.name@, label)) exit(EXIT_ERROR); 
+
             @i  @expr.vars@ = @guarded.vars@;
             @i  @stats.vars@ = @guarded.vars@;
+
+            @i @guarded.node@ = code_guarded(@expr.node@, @ID.name@, true);
+
+            @cmp printf("guarded:\n");
+            @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats BREAK 
         @{
             @i  @expr.vars@ = @guarded.vars@;
             @i  @stats.vars@ = @guarded.vars@;
+
+            @i @guarded.node@ = code_guarded(@expr.node@, NULL, false);
+            
+            @cmp printf("guarded:\n");
+            @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats BREAK ID
         @{
             @t  if (!symbol_table_exists_type(@guarded.vars@, @ID.name@, label)) exit(EXIT_ERROR); 
+
             @i  @expr.vars@ = @guarded.vars@;
             @i  @stats.vars@ = @guarded.vars@;
-        @}
-        ;
 
-lexpr   : ID
-        @{ @t  if (!symbol_table_exists_type(@lexpr.vars@, @ID.name@, variable | parameter)) exit(EXIT_ERROR); @}
-        | term CIRCUMFLEX
-        @{ 
-            @i  @term.vars@ = @lexpr.vars@;
+            @i @guarded.node@ = code_guarded(@expr.node@, @ID.name@, false);
 
-            //@i @expr.node@ = code_op(C_MEM_WRITE, @term.node@, NULL);
+            @cmp printf("guarded:\n");
+            @cmp @revorder(1) printf("guarded_end:\n");
         @}
         ;
 

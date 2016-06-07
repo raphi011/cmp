@@ -82,7 +82,6 @@ bool symbol_table_exists_type(struct symbol* table, char *name, int type) {
         if ((0 == strcmp(next->name, name)) && (next->type & type)) {
             return true;
         } else {
-            printf("compaing %d with %d and %s with %s failed", next->type, type, next->name, name);
             next = next->next;  
         }
     }
