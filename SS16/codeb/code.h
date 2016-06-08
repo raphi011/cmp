@@ -58,11 +58,13 @@ typedef treenode *treenodep;
 #define PANIC           printf
 #define NODEPTR_TYPE    treenodep
 
+
+void code_generate(treenode *);
 treenode* code_op(int, treenode*, treenode*);
 treenode* code_num(int);
 treenode* code_id(char *, struct symbol*);
 treenode* code_assign(treenode *, char *, struct symbol *);
-treenode* code_dostat(char *, treenode *);
+void code_dostat(treenode *);
 treenode* code_guarded(treenode *, char *, bool);
 
 #endif

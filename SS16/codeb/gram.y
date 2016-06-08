@@ -13,8 +13,6 @@
     int yylex();
     void yyerror(const char *s);
     
-    void burm_reduce(NODEPTR_TYPE, int);
-    void burm_label(NODEPTR_TYPE);
 
     int error_count = 0;
 
@@ -29,9 +27,9 @@
 
 @attributes { char *name; } ID
 @attributes { int val; } NUM
-@attributes { struct symbol* vars; } exprs
+@attributes { struct symbol* vars; } exprs stats
 @attributes { struct symbol* pars; } pars
-@attributes { struct symbol* vars; treenode *node; } expr plus term unary or mult dostat guarded guardeds stats
+@attributes { struct symbol* vars; treenode *node; } expr plus term unary or mult dostat guarded guardeds
 @attributes { struct symbol* vars; treenode *node; struct symbol* vars_new; } stat 
 
 @traversal @preorder t
@@ -75,17 +73,10 @@ pars    :
         ;
 
 stats   :
-	@{
-	    @i @stats.node@ = NULL;
-	@}
         | stat SEMICOLON stats    
         @{
             @i @stat.vars@ = @stats.0.vars@;
             @i @stats.1.vars@ = @stat.vars_new@;
-
-	    @i @stats.node@ = @stat.node@;
-
-            @cmp burm_label(@stat.node@); burm_reduce(@stat.node@, 1);
         @}
         ;
 
@@ -95,15 +86,17 @@ stat    : RETURN expr
             @i @stat.vars_new@ = @stat.vars@;
 
             @i @stat.node@ = code_op(C_RET, @expr.node@, NULL);
+
+            @cmp code_generate(@stat.node@);
         @} 
         | dostat
         @{
             @i @dostat.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
 
-            @i @stat.node@ = code_dostat(NULL, @dostat.node@);
+            @i @stat.node@ = @dostat.node@;
 
-            @cmp @revorder(1) printf("dostat_end:\n");
+            @cmp code_dostat(@stat.node@);
         @}
         | VAR ID ASSIGN expr
         @{
@@ -111,6 +104,8 @@ stat    : RETURN expr
             @i @stat.vars_new@ = symbol_table_add(@stat.vars@, @ID.name@, variable);
 
             @i @stat.node@ = code_assign(@expr.node@, @ID.name@, @stat.vars_new@);
+
+            @cmp code_generate(@stat.node@);
         @}
         | ID ASSIGN expr
         @{
@@ -120,6 +115,8 @@ stat    : RETURN expr
             @i @stat.vars_new@ = @stat.vars@;
 
             @i @stat.node@ = code_assign(@expr.node@, @ID.name@, @stat.vars_new@);
+
+            @cmp code_generate(@stat.node@);
         @}
         | term CIRCUMFLEX ASSIGN expr
         @{
@@ -128,6 +125,8 @@ stat    : RETURN expr
             @i @stat.vars_new@ = @stat.vars@;
                 
             @i @stat.node@ = code_op(C_MEM_WRITE, @term.node@, @expr.node@);
+
+            @cmp code_generate(@stat.node@);
         @}
         | term
         @{
@@ -135,6 +134,8 @@ stat    : RETURN expr
             @i @stat.vars_new@ = @stat.vars@;
 
             @i @stat.node@ = @term.node@;
+
+            /* @cmp code_generate(@stat.node@); */
         @}
         ;
 
@@ -172,8 +173,6 @@ guarded : expr GUARD stats CONTINUE
             @i  @stats.vars@ = @guarded.vars@;
 
             @i @guarded.node@ = @expr.node@;
-
-            @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats CONTINUE ID
         @{
@@ -183,8 +182,6 @@ guarded : expr GUARD stats CONTINUE
             @i  @stats.vars@ = @guarded.vars@;
 
             @i @guarded.node@ = @expr.node@;
-
-            @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats BREAK 
         @{
@@ -192,8 +189,6 @@ guarded : expr GUARD stats CONTINUE
             @i  @stats.vars@ = @guarded.vars@;
 
             @i @guarded.node@ = @expr.node@;
-            
-            @cmp @revorder(1) printf("guarded_end:\n");
         @}
         | expr GUARD stats BREAK ID
         @{
@@ -203,9 +198,6 @@ guarded : expr GUARD stats CONTINUE
             @i  @stats.vars@ = @guarded.vars@;
 
             @i @guarded.node@ = @expr.node@;
-
-            @cmp printf("guarded:\n");
-            @cmp @revorder(1) printf("guarded_end:\n");
         @}
         ;
 

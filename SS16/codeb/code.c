@@ -1,13 +1,24 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdbool.h>
 
 #include "code.h"
 #include "symbol_table.h"
 
-treenode* code_assign(treenode *left, char *name, struct symbol *symbols) {
-    if (!symbol_table_exists_type(symbols, name, variable | parameter)) {
-        exit(EXIT_ERROR); 
+void burm_reduce(treenode *, int);
+void burm_label(treenode *);
+
+void
+code_generate(treenode* node) {
+    burm_label (node);
+    burm_reduce (node, 1);
+}
+
+treenode*
+code_assign(treenode *left, char *name, struct symbol *symbols) {
+    if (!symbol_table_exists_type (symbols, name, variable | parameter)) {
+        exit (EXIT_ERROR); 
     }
 
     treenode *node = code_op(C_ASSIGN, left, NULL);
@@ -21,16 +32,24 @@ treenode* code_assign(treenode *left, char *name, struct symbol *symbols) {
     return node;
 }
 
-treenode* code_dostat(char *label, treenode* guarded) {
-    return code_op(C_DOSTAT, guarded, NULL);
+void
+code_dostat(treenode* node) {
+    printf("dostat:\n");
+
+
+
+
+    printf("endstat: \n");
 }
 
-treenode* code_guarded(treenode* guard, char *label, bool cont) {
+treenode*
+code_guarded(treenode* guard, char *label, bool cont) {
     return code_op(C_GUARDED, guard, NULL);
 }
 
-treenode* code_op (int op, treenode *left, treenode *right) {
-    treenode *node = (treenode *)malloc(sizeof(treenode));
+treenode*
+code_op (int op, treenode *left, treenode *right) {
+    treenode *node = (treenode *)malloc (sizeof(treenode));
 
     node->op = op;
     node->kids[0] = left;
@@ -42,7 +61,8 @@ treenode* code_op (int op, treenode *left, treenode *right) {
     return node;
 }
 
-treenode* code_num (int num) {
+treenode* 
+code_num (int num) {
     treenode *node = code_op(C_NUM, NULL, NULL);
 
     node->val = num;
@@ -50,12 +70,13 @@ treenode* code_num (int num) {
     return node;
 }
 
-treenode* code_id (char *name, struct symbol *symbols) {
-    if (!symbol_table_exists_type(symbols, name, variable | parameter)) {
-        exit(EXIT_ERROR); 
+treenode* 
+code_id (char *name, struct symbol *symbols) {
+    if (!symbol_table_exists_type (symbols, name, variable | parameter)) {
+        exit (EXIT_ERROR); 
     }
 
-    treenode *node = code_op(C_ID, NULL, NULL);
+    treenode *node = code_op (C_ID, NULL, NULL);
 
     struct symbol* sym = symbol_table_get (symbols, name);
 
