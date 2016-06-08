@@ -25,6 +25,8 @@ code_assign(treenode *left, char *name, struct symbol *symbols) {
 
     struct symbol* sym = symbol_table_get (symbols, name);
 
+    printf("# assign name: %s reg: %s\n", name, sym->reg);
+
     node->name = name;
     node->reg = sym->reg;
     node->temp = false;

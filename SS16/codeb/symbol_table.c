@@ -20,7 +20,7 @@ struct symbol *symbol_table_add(struct symbol* table, char *name, enum symbol_ty
     new_entry->type = type;
 
     if (type == variable) {
-        new_entry->reg = regs_new_var();
+        new_entry->reg = regs_new_var ();
     }
 
     return new_entry;

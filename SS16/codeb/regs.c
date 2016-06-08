@@ -19,6 +19,7 @@ struct symbol* regs_init_vars (struct symbol *pars) {
 
     while (next != NULL) {
         next->reg = strdup(regs[i++]);
+        printf("# new par reg: %s\n", next->reg);
         next = next->next;
     }
 
@@ -41,7 +42,8 @@ struct symbol* regs_init_vars (struct symbol *pars) {
     return pars;
 }
 
-bool regs_is_temp(char *r) {
+void 
+regs_free_if_temp (char *r) {
     int i;
 
     for (i = 0; i < MAX_REG; i++) {
@@ -49,17 +51,18 @@ bool regs_is_temp(char *r) {
             break;
         }
         if (strcmp(r, reg_avail[i]) == 0) {
-            return true;
+                reg_used[i] = false;
+                printf("# freed %s\n", r);
+                return;
         }
     }
-    return false;
 }
 
 char* regs_new_var (void) {
     int i;
 
     for (i = MAX_REG - 1; i >= 0; i--) {
-        if (reg_avail[i] != NULL) {
+        if (reg_avail[i] != NULL && !reg_used[i]) {
             char *reg = strdup(reg_avail[i]);
             reg_avail[i] = NULL;
             return reg;

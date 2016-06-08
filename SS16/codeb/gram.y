@@ -77,7 +77,7 @@ pars    :
 stats   :
         | stat SEMICOLON stats    
         @{
-            @i @stat.vars@ = @stats.0.vars@;
+            @i @stat.vars@ = @stats.0.vars_new@;
             @i @stats.1.vars@ = @stat.vars_new@;
         @}
         ;
@@ -103,20 +103,20 @@ stat    : RETURN expr
         | VAR ID ASSIGN expr
         @{
             @i @expr.vars@ = @stat.vars@;
-            @i @stat.vars_new@ = symbol_table_add(@stat.vars@, @ID.name@, variable);
+            @i @stat.vars_new@ = symbol_table_add (@stat.vars@, @ID.name@, variable);
 
-            @i @stat.node@ = code_assign(@expr.node@, @ID.name@, @stat.vars_new@);
+            @i @stat.node@ = code_assign (@expr.node@, @ID.name@, @stat.vars_new@);
 
-            @cmp code_generate(@stat.node@);
+            @cmp code_generate (@stat.node@);
         @}
         | ID ASSIGN expr
         @{
-            @t if (!symbol_table_exists_type(@stat.vars@, @ID.name@, variable | parameter)) exit(EXIT_ERROR); 
+            @t if (!symbol_table_exists_type (@stat.vars@, @ID.name@, variable | parameter)) exit (EXIT_ERROR); 
 
             @i @expr.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
 
-            @i @stat.node@ = code_assign(@expr.node@, @ID.name@, @stat.vars_new@);
+            @i @stat.node@ = code_assign (@expr.node@, @ID.name@, @stat.vars_new@);
 
             @cmp code_generate(@stat.node@);
         @}
@@ -368,7 +368,7 @@ term    : BRACKET_LEFT expr BRACKET_RIGHT
         @}
         | NUM
         @{ 
-            @i @term.node@ = code_num(@NUM.val@);
+            @i @term.node@ = code_num (@NUM.val@);
         @}
         | ID
         @{

@@ -21,14 +21,25 @@ print_code (const char *str, ...) {
     va_end(arguments);
 }
 
+static inline void
+asm_mov_reg(char *reg1, char *reg2) {
+    print_code ("movq %%%s, %%%s", reg1, reg2);
+}
+
+static inline void
+asm_mov_const(int val, char *reg2) {
+    print_code ("movq $%d, %%%s", val, reg2);
+}
+
 void
 asm_move (treenode *par, char *reg) {
     if (HAS_REG (par)) {
-        print_code ("movq %%%s, %%%s", REG(par), reg);
+        asm_mov_reg(REG(par), reg);
     } else {
-        print_code ("movq $%d, %%%s", VAL(par), reg);
+        asm_mov_const(VAL(par), reg);
     }
 }
+
 
 void
 asm_mem_write (treenode *par1, treenode *par2) {
@@ -82,7 +93,8 @@ asm_cond (char *label, char *reg) {
 
 void
 asm_ret_const (int val) {
-    print_code ("movq $%d, %%rax", val);
+    asm_mov_const(val, "rax");
+    // print_code ("movq $%d, %%rax", val);
     print_code ("ret");
 }
 
@@ -103,12 +115,19 @@ char* asm_add (treenode *par1, treenode *par2) {
     if (HAS_REG(par1) && HAS_REG(par2)) {
         asm_move(par1, reg);
         print_code ("addq %%%s, %%%s", REG(par2), reg);
+
+        regs_free_if_temp (REG(par1));
+        regs_free_if_temp (REG(par2));
     } else if (!HAS_REG(par1)) {
         asm_move(par2, reg);
         print_code ("addq $%d, %%%s", VAL(par1), reg);
+
+        regs_free_if_temp (REG(par2));
     } else {
         asm_move(par1, reg);
         print_code ("addq $%d, %%%s", VAL(par2), reg);
+
+        regs_free_if_temp (REG(par1));
     }
 
     return reg;
@@ -120,12 +139,19 @@ char* asm_mult (treenode *par1, treenode *par2) {
     if (HAS_REG(par1) && HAS_REG(par2)) {
         asm_move(par1, reg);
         print_code ("imulq %%%s, %%%s", REG(par2), reg);
+
+        regs_free_if_temp (REG(par1));
+        regs_free_if_temp (REG(par2));
     } else if (!HAS_REG(par1)) {
         asm_move(par2, reg);
         print_code ("imulq $%d, %%%s", VAL(par1), reg);
+
+        regs_free_if_temp (REG(par2));
     } else {
         asm_move(par1, reg);
         print_code ("imulq $%d, %%%s", VAL(par2), reg);
+
+        regs_free_if_temp (REG(par1));
     }
 
     return reg;
@@ -138,6 +164,10 @@ char* asm_minus (treenode *par) {
     asm_move(par, reg);
     print_code ("neg %%%s", reg);
 
+    if (HAS_REG (par)) {
+        regs_free_if_temp (REG(par));
+    }
+
     return reg;
 }
 
@@ -147,12 +177,19 @@ char* asm_or (treenode *par1, treenode *par2) {
     if (HAS_REG(par1) && HAS_REG(par2)) {
         asm_move(par1, reg);
         print_code ("or %%%s, %%%s", REG(par2), reg);
+
+        regs_free_if_temp (REG(par1));
+        regs_free_if_temp (REG(par2));
     } else if (!HAS_REG(par1)) {
         asm_move(par2, reg);
         print_code ("or $%d, %%%s", VAL(par1), reg);
+
+        regs_free_if_temp (REG(par2));
     } else {
         asm_move(par1, reg);
         print_code ("or $%d, %%%s", VAL(par2), reg);
+
+        regs_free_if_temp (REG(par1));
     }
 
     return reg;
@@ -164,28 +201,42 @@ char* asm_not (treenode *par) {
     asm_move (par, reg);
     print_code ("not %%%s", reg);
 
+    if (HAS_REG (par)) {
+        regs_free_if_temp (REG(par));
+    }
+
     return reg;
 }
 
 char* asm_less (treenode *par1, treenode *par2) {
     char *reg = regs_new_temp ();
-    print_code ("movq $0, %%%s", reg);
+    asm_mov_const(0, reg);
+    // print_code ("movq $0, %%%s", reg);
 
     if (HAS_REG(par1) && HAS_REG(par2)) {
         print_code ("cmp %%%s, %%%s", REG(par2), REG(par1));
         print_code ("setge %%%s", regs_8bit(reg)); 
+
+        regs_free_if_temp (REG(par1));
+        regs_free_if_temp (REG(par2));
     } else if (!HAS_REG(par1) && !HAS_REG(par2)) {
-        print_code ("movq $%d, %%%s", VAL(par1) < VAL(par2) ? -1 : 0, reg);
+        //print_code ("movq $%d, %%%s", VAL(par1) < VAL(par2) ? -1 : 0, reg);
+        asm_mov_const(VAL(par1) < VAL(par2) ? -1 : 0, reg);
         return reg;
     } else if (!HAS_REG(par1)) {
         print_code ("cmp $%d, %%%s", VAL(par1), REG(par2));
         print_code ("setl %%%s", regs_8bit(reg)); 
+
+        regs_free_if_temp (REG(par2));
     } else {
         print_code ("cmp $%d, %%%s", VAL(par2), REG(par1));
         print_code ("setge %%%s", regs_8bit(reg)); 
+
+        regs_free_if_temp (REG(par1));
     }
 
     print_code ("sub $1, %%%s", reg); 
+
 
     return reg;
 }
@@ -195,6 +246,7 @@ char* asm_mem (treenode *par) {
 
     if (HAS_REG(par)) {
         print_code ("mov (%%%s), %%%s", REG(par), reg);
+        regs_free_if_temp (REG(par));
     } else {
         print_code ("mov ($%d), %%%s", VAL(par), reg);
     }
@@ -204,17 +256,26 @@ char* asm_mem (treenode *par) {
 
 char* asm_eq (treenode *par1, treenode *par2) {
     char *reg = regs_new_temp ();
-    print_code ("movq $0, %%%s", reg);
+    asm_mov_const(0, reg);
+    // print_code ("movq $0, %%%s", reg);
 
     if (HAS_REG(par1) && HAS_REG(par2)) {
         print_code ("cmp %%%s, %%%s", REG(par1), REG(par2));
+
+        regs_free_if_temp (REG(par1));
+        regs_free_if_temp (REG(par2));
     } else if (!HAS_REG(par1) && !HAS_REG(par2)) {
-        print_code ("movq $%d, %%%s", VAL(par1) == VAL(par2) ? -1 : 0, reg);
+        asm_mov_const(VAL(par1) == VAL(par2) ? -1 : 0, reg);
+        // print_code ("movq $%d, %%%s", VAL(par1) == VAL(par2) ? -1 : 0, reg);
         return reg;
     } else if (!HAS_REG(par1)) {
         print_code ("cmp $%d, %%%s", VAL(par1), REG(par2));
+
+        regs_free_if_temp (REG(par2));
     } else {
         print_code ("cmp $%d, %%%s", VAL(par2), REG(par1));
+
+        regs_free_if_temp (REG(par1));
     }
 
     print_code ("setne %%%s", regs_8bit(reg)); 
