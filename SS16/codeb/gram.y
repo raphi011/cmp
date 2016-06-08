@@ -77,7 +77,7 @@ pars    :
 stats   :
         | stat SEMICOLON stats    
         @{
-            @i @stat.vars@ = @stats.0.vars_new@;
+            @i @stat.vars@ = @stats.0.vars@;
             @i @stats.1.vars@ = @stat.vars_new@;
         @}
         ;
@@ -118,7 +118,7 @@ stat    : RETURN expr
 
             @i @stat.node@ = code_assign (@expr.node@, @ID.name@, @stat.vars_new@);
 
-            @cmp code_generate(@stat.node@);
+            @cmp code_generate (@stat.node@);
         @}
         | term CIRCUMFLEX ASSIGN expr
         @{
@@ -149,7 +149,7 @@ dostat  : ID COLON DO guardeds END
             @i @dostat.node@ = code_dostat(@guardeds.node@, @ID.name@);
 
             @cmp printf("%s:\n", @ID.name@);
-            @cmp @revorder(1) printf("%s_end\n", @ID.name@);
+            @cmp @revorder(1) printf("%s_end:\n", @ID.name@);
 
         @}
         | DO guardeds END

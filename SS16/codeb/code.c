@@ -28,7 +28,9 @@ code_assign(treenode *left, char *name, struct symbol *symbols) {
     printf("# assign name: %s reg: %s\n", name, sym->reg);
 
     node->name = name;
-    node->reg = sym->reg;
+    if (sym->reg) {
+        node->reg = strdup(sym->reg);
+    }
     node->temp = false;
 
     return node;

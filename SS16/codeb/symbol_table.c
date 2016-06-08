@@ -102,6 +102,9 @@ struct symbol* symbol_table_clone(struct symbol* table) {
 
     clone->type = table->type;
     clone->name = strdup(table->name); 
+    if (table->reg) {
+        clone->reg = strdup(table->reg);
+    }
      
     while ((table = table->next) != NULL) {
         current->next = malloc(sizeof(struct symbol)); 
