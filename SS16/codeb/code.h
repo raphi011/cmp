@@ -64,7 +64,7 @@ treenode* code_op(int, treenode*, treenode*);
 treenode* code_num(int);
 treenode* code_id(char *, struct symbol*);
 treenode* code_assign(treenode *, char *, struct symbol *);
-void code_dostat(treenode *);
-treenode* code_guarded(treenode *, char *, bool);
+treenode* code_dostat(treenode *, char *name);
+treenode* code_guarded(treenode *, char *);
 
 #endif

@@ -1,11 +1,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "asm.h"
 #include "regs.h"
 
-static void print_code (const char *str, ...) {
+static void
+print_code (const char *str, ...) {
     va_list arguments;
 
     va_start (arguments, str);
@@ -19,7 +21,8 @@ static void print_code (const char *str, ...) {
     va_end(arguments);
 }
 
-void asm_move(treenode *par, char *reg) {
+void
+asm_move (treenode *par, char *reg) {
     if (HAS_REG (par)) {
         print_code ("movq %%%s, %%%s", REG(par), reg);
     } else {
@@ -27,7 +30,8 @@ void asm_move(treenode *par, char *reg) {
     }
 }
 
-void asm_mem_write(treenode *par1, treenode *par2) {
+void
+asm_mem_write (treenode *par1, treenode *par2) {
     if (HAS_REG (par2)) {
         print_code ("movq %%%s, (%%%s)", REG(par2), REG(par1));
     } else {
@@ -35,20 +39,60 @@ void asm_mem_write(treenode *par1, treenode *par2) {
     }
 }
 
-void asm_func (char* name) {
+int label_id = 0;
+
+char*
+asm_new_label(void) {
+
+    char *name = malloc(9);
+
+    snprintf(name, 9, "label_%d", label_id++); 
+
+    return name;
+}
+
+void
+asm_dostat (treenode* node) {
+    printf("dostat:\n");
+}
+
+void
+asm_guarded (char *dostat, char *guarded, bool cont) {
+
+
+    if (cont) {
+        print_code("jmp %s", dostat);
+    } else {
+        print_code("jmp %s_end", dostat);
+    }
+
+    printf("%s_end:\n", guarded);
+}
+
+void
+asm_func (char* name) {
     printf (".globl %1$s\n.type %1$s, @function\n%1$s:\n", name);
 }
 
-void asm_ret_const (int val) {
+void
+asm_cond (char *label, char *reg) {
+    print_code("jns %s_end", label);
+}
+
+
+void
+asm_ret_const (int val) {
     print_code ("movq $%d, %%rax", val);
     print_code ("ret");
 }
 
-void asm_assign (treenode *par1, treenode *par2) {
-    asm_move (par2, REG(par1));
+void
+asm_assign (treenode *par1, treenode *par2) {
+    asm_move (par2, REG(par1)); 
 }
 
-void asm_ret (treenode *par) {
+void
+asm_ret (treenode *par) {
     asm_move (par, "rax");
     print_code ("ret");
 }

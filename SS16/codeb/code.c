@@ -32,19 +32,22 @@ code_assign(treenode *left, char *name, struct symbol *symbols) {
     return node;
 }
 
-void
-code_dostat(treenode* node) {
-    printf("dostat:\n");
+treenode*
+code_dostat(treenode* node, char *name) {
+    treenode *dostat = code_op(C_DOSTAT, node, NULL);
 
+    dostat->name = name;
 
-
-
-    printf("endstat: \n");
+    return dostat;
 }
 
 treenode*
-code_guarded(treenode* guard, char *label, bool cont) {
-    return code_op(C_GUARDED, guard, NULL);
+code_guarded(treenode* guard, char *label) {
+    treenode *guarded = code_op(C_GUARDED, guard, NULL);
+
+    guarded->name = label;
+
+    return guarded;
 }
 
 treenode*
