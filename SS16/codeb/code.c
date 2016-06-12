@@ -25,8 +25,6 @@ code_assign(treenode *left, char *name, struct symbol *symbols) {
 
     struct symbol* sym = symbol_table_get (symbols, name);
 
-    printf("# assign name: %s reg: %s\n", name, sym->reg);
-
     node->name = name;
     if (sym->reg) {
         node->reg = strdup(sym->reg);
@@ -34,15 +32,6 @@ code_assign(treenode *left, char *name, struct symbol *symbols) {
     node->temp = false;
 
     return node;
-}
-
-treenode*
-code_dostat(treenode* node, char *name) {
-    treenode *dostat = code_op(C_DOSTAT, node, NULL);
-
-    dostat->name = name;
-
-    return dostat;
 }
 
 treenode*

@@ -27,11 +27,11 @@
 
 @attributes { char *name; } ID
 @attributes { int val; } NUM
-@attributes { struct symbol* vars; } exprs stats
+@attributes { struct symbol* vars; } exprs stats dostat
 @attributes { struct symbol* pars; } pars
 @attributes { struct symbol* vars; treenode *node; char *dostat_label; } guardeds
 @attributes { struct symbol* vars; treenode *node; char *dostat_label; bool cont; } guarded
-@attributes { struct symbol* vars; treenode *node; } expr plus term unary or mult dostat
+@attributes { struct symbol* vars; treenode *node; } expr plus term unary or mult
 @attributes { struct symbol* vars; treenode *node; struct symbol* vars_new; } stat 
 
 @traversal @preorder t
@@ -59,6 +59,7 @@ funcdef : ID BRACKET_LEFT pars BRACKET_RIGHT stats END SEMICOLON
             @i @stats.vars@ = regs_init_vars (@pars.pars@); 
 
             @cmp asm_func (@ID.name@);
+            @cmp @revorder(1) regs_cleanup();
         @}
         ;
 
@@ -96,9 +97,7 @@ stat    : RETURN expr
             @i @dostat.vars@ = @stat.vars@;
             @i @stat.vars_new@ = @stat.vars@;
 
-            @i @stat.node@ = @dostat.node@;
-
-
+            @i @stat.node@ = NULL;
         @}
         | VAR ID ASSIGN expr
         @{
@@ -144,20 +143,16 @@ stat    : RETURN expr
 dostat  : ID COLON DO guardeds END
         @{
             @i @guardeds.vars@ = symbol_table_add(@dostat.vars@, @ID.name@, label);
-            @i @guardeds.dostat_label@ = @ID.name@;
+            @i @guardeds.dostat_label@ = symbol_table_get(@guardeds.vars@, @ID.name@)->reg;
 
-            @i @dostat.node@ = code_dostat(@guardeds.node@, @ID.name@);
-
-            @cmp printf("%s:\n", @ID.name@);
-            @cmp @revorder(1) printf("%s_end:\n", @ID.name@);
+            @cmp printf("%s:\n", symbol_table_get(@guardeds.vars@, @ID.name@)->reg);
+            @cmp @revorder(1) printf("%s_end:\n", symbol_table_get(@guardeds.vars@, @ID.name@)->reg);
 
         @}
         | DO guardeds END
         @{
             @i @guardeds.vars@ = @dostat.vars@;
-            @i @guardeds.dostat_label@ = asm_new_label();
-
-            @i @dostat.node@ = code_dostat(@guardeds.node@, @guardeds.dostat_label@);
+            @i @guardeds.dostat_label@ = asm_new_label("dostat");
 
             @cmp printf("%s:\n", @guardeds.dostat_label@);
             @cmp @revorder(1) printf("%s_end:\n", @guardeds.dostat_label@);
@@ -176,7 +171,6 @@ guardeds:
             @i @guardeds.1.dostat_label@ = @guardeds.0.dostat_label@;
 
             @i @guardeds.0.node@ = @guarded.node@;
-
         @}
         ;
 
@@ -186,10 +180,10 @@ guarded : expr GUARD stats CONTINUE
             @i  @stats.vars@ = @guarded.vars@;
             @i  @guarded.cont@ = true;
 
-            @i @guarded.node@ = code_guarded(@expr.node@, asm_new_label());
+            @i @guarded.node@ = code_guarded(@expr.node@, asm_new_label("guarded"));
 
             @cmp code_generate (@expr.node@);
-            @cmp asm_cond(@guarded.node@->name, @expr.node@->reg);
+            @cmp asm_cond(@guarded.node@->name, @expr.node@);
             @cmp @revorder(1) asm_guarded (@guarded.dostat_label@, @guarded.node@->name, @guarded.cont@);
 
         @}
@@ -201,11 +195,11 @@ guarded : expr GUARD stats CONTINUE
             @i  @stats.vars@ = @guarded.vars@;
             @i  @guarded.cont@ = true;
 
-            @i @guarded.node@ = code_guarded(@expr.node@, asm_new_label());
+            @i @guarded.node@ = code_guarded(@expr.node@, asm_new_label("guarded"));
 
             @cmp code_generate (@expr.node@);
-            @cmp asm_cond(@guarded.node@->name, @expr.node@->reg);
-            @cmp @revorder(1) asm_guarded (@guarded.dostat_label@, @guarded.node@->name, @guarded.cont@);
+            @cmp asm_cond(@guarded.node@->name, @expr.node@);
+            @cmp @revorder(1) asm_guarded (symbol_table_get(@guarded.vars@, @ID.name@)->reg, @guarded.node@->name, @guarded.cont@);
         @}
         | expr GUARD stats BREAK 
         @{
@@ -213,10 +207,10 @@ guarded : expr GUARD stats CONTINUE
             @i  @stats.vars@ = @guarded.vars@;
             @i  @guarded.cont@ = false;
 
-            @i @guarded.node@ = code_guarded(@expr.node@, asm_new_label());
+            @i @guarded.node@ = code_guarded(@expr.node@, asm_new_label("guarded"));
 
             @cmp code_generate (@expr.node@);
-            @cmp asm_cond(@guarded.node@->name, @expr.node@->reg);
+            @cmp asm_cond(@guarded.node@->name, @expr.node@);
             @cmp @revorder(1) asm_guarded (@guarded.dostat_label@, @guarded.node@->name, @guarded.cont@);
         @}
         | expr GUARD stats BREAK ID
@@ -227,11 +221,11 @@ guarded : expr GUARD stats CONTINUE
             @i  @stats.vars@ = @guarded.vars@;
             @i  @guarded.cont@ = false;
 
-            @i @guarded.node@ = code_guarded(@expr.node@, asm_new_label());
+            @i @guarded.node@ = code_guarded(@expr.node@, asm_new_label("guarded"));
 
             @cmp code_generate (@expr.node@);
-            @cmp asm_cond(@guarded.node@->name, @expr.node@->reg);
-            @cmp @revorder(1) asm_guarded (@guarded.dostat_label@, @guarded.node@->name, @guarded.cont@);
+            @cmp asm_cond(@guarded.node@->name, @expr.node@);
+            @cmp @revorder(1) asm_guarded (symbol_table_get(@guarded.vars@, @ID.name@)->reg, @guarded.node@->name, @guarded.cont@);
         @}
         ;
 

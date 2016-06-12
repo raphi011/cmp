@@ -40,7 +40,6 @@ asm_move (treenode *par, char *reg) {
     }
 }
 
-
 void
 asm_mem_write (treenode *par1, treenode *par2) {
     if (HAS_REG (par2)) {
@@ -53,13 +52,13 @@ asm_mem_write (treenode *par1, treenode *par2) {
 int label_id = 0;
 
 char*
-asm_new_label(void) {
+asm_new_label(char *name) {
+    size_t len = strlen (name) + 4;
+    char *label = malloc (len);
 
-    char *name = malloc(9);
+    snprintf(label, len, "%s_%d", name, label_id++); 
 
-    snprintf(name, 9, "label_%d", label_id++); 
-
-    return name;
+    return label;
 }
 
 void
@@ -68,13 +67,11 @@ asm_dostat (treenode* node) {
 }
 
 void
-asm_guarded (char *dostat, char *guarded, bool cont) {
-
-
+asm_guarded (char *label, char *guarded, bool cont) {
     if (cont) {
-        print_code("jmp %s", dostat);
+        print_code("jmp %s", label);
     } else {
-        print_code("jmp %s_end", dostat);
+        print_code("jmp %s_end", label);
     }
 
     printf("%s_end:\n", guarded);
@@ -86,15 +83,20 @@ asm_func (char* name) {
 }
 
 void
-asm_cond (char *label, char *reg) {
-    print_code("jns %s_end", label);
+asm_cond (char *label, treenode *node) {
+    if (HAS_REG (node)) {
+        print_code("cmp $0, %%%s", REG(node));
+        print_code("jns %s_end", label);
+    } else {
+        if (VAL(node) >= 0) {
+            print_code("jmp %s_end", label);
+        }
+    }
 }
-
 
 void
 asm_ret_const (int val) {
     asm_mov_const(val, "rax");
-    // print_code ("movq $%d, %%rax", val);
     print_code ("ret");
 }
 
@@ -211,7 +213,6 @@ char* asm_not (treenode *par) {
 char* asm_less (treenode *par1, treenode *par2) {
     char *reg = regs_new_temp ();
     asm_mov_const(0, reg);
-    // print_code ("movq $0, %%%s", reg);
 
     if (HAS_REG(par1) && HAS_REG(par2)) {
         print_code ("cmp %%%s, %%%s", REG(par2), REG(par1));
@@ -220,7 +221,6 @@ char* asm_less (treenode *par1, treenode *par2) {
         regs_free_if_temp (REG(par1));
         regs_free_if_temp (REG(par2));
     } else if (!HAS_REG(par1) && !HAS_REG(par2)) {
-        //print_code ("movq $%d, %%%s", VAL(par1) < VAL(par2) ? -1 : 0, reg);
         asm_mov_const(VAL(par1) < VAL(par2) ? -1 : 0, reg);
         return reg;
     } else if (!HAS_REG(par1)) {
@@ -236,7 +236,6 @@ char* asm_less (treenode *par1, treenode *par2) {
     }
 
     print_code ("sub $1, %%%s", reg); 
-
 
     return reg;
 }
@@ -257,7 +256,6 @@ char* asm_mem (treenode *par) {
 char* asm_eq (treenode *par1, treenode *par2) {
     char *reg = regs_new_temp ();
     asm_mov_const(0, reg);
-    // print_code ("movq $0, %%%s", reg);
 
     if (HAS_REG(par1) && HAS_REG(par2)) {
         print_code ("cmp %%%s, %%%s", REG(par1), REG(par2));
@@ -266,7 +264,6 @@ char* asm_eq (treenode *par1, treenode *par2) {
         regs_free_if_temp (REG(par2));
     } else if (!HAS_REG(par1) && !HAS_REG(par2)) {
         asm_mov_const(VAL(par1) == VAL(par2) ? -1 : 0, reg);
-        // print_code ("movq $%d, %%%s", VAL(par1) == VAL(par2) ? -1 : 0, reg);
         return reg;
     } else if (!HAS_REG(par1)) {
         print_code ("cmp $%d, %%%s", VAL(par1), REG(par2));

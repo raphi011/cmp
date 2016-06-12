@@ -19,8 +19,7 @@ C_ID=12,
 C_MEM_READ=13,
 C_ASSIGN=14,
 C_MEM_WRITE=15,
-C_DOSTAT=16,
-C_GUARDED=17
+C_GUARDED=16
 };
 
 
@@ -64,7 +63,6 @@ treenode* code_op(int, treenode*, treenode*);
 treenode* code_num(int);
 treenode* code_id(char *, struct symbol*);
 treenode* code_assign(treenode *, char *, struct symbol *);
-treenode* code_dostat(treenode *, char *name);
 treenode* code_guarded(treenode *, char *);
 
 #endif

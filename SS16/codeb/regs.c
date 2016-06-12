@@ -12,14 +12,15 @@ char* reg_avail[MAX_REG];
 bool reg_used[MAX_REG];
 
 char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+char *callee_regs[] = { "rbx", "r12", "r13", "r14", "r15" };
 
-struct symbol* regs_init_vars (struct symbol *pars) {
+struct symbol*
+regs_init_vars (struct symbol *pars) {
     int i = 0, j = 0;
     struct symbol *next = pars;
 
     while (next != NULL) {
         next->reg = strdup(regs[i++]);
-        printf("# new par reg: %s\n", next->reg);
         next = next->next;
     }
 
@@ -58,7 +59,8 @@ regs_free_if_temp (char *r) {
     }
 }
 
-char* regs_new_var (void) {
+char*
+regs_new_var (void) {
     int i;
 
     for (i = MAX_REG - 1; i >= 0; i--) {
@@ -73,7 +75,8 @@ char* regs_new_var (void) {
     exit(EXIT_ERROR);
 }
 
-char* regs_new_temp (void) {
+char*
+regs_new_temp (void) {
     int i;
 
     for (i = 0; i < MAX_REG; i++) {
@@ -90,7 +93,8 @@ char* regs_new_temp (void) {
     exit(EXIT_ERROR);
 }
 
-char* regs_8bit(char* r) {
+char*
+regs_8bit(char* r) {
 	if (strcmp(r, "rax") == 0) {
 		return "al";
 	} else if (strcmp(r, "rdi") == 0) {
@@ -112,4 +116,9 @@ char* regs_8bit(char* r) {
 	} else {
 		return NULL;
 	}
+}
+
+void
+regs_cleanup(void) {
+    printf("cleaning up\n");
 }

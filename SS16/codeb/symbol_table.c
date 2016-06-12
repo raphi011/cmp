@@ -6,6 +6,7 @@
 
 #include "symbol_table.h"
 #include "regs.h"
+#include "asm.h"
 
 struct symbol *symbol_table_add(struct symbol* table, char *name, enum symbol_type type) {
     if (symbol_table_exists(table,name)) { 
@@ -21,6 +22,8 @@ struct symbol *symbol_table_add(struct symbol* table, char *name, enum symbol_ty
 
     if (type == variable) {
         new_entry->reg = regs_new_var ();
+    } else if (type == label) {
+        new_entry->reg = asm_new_label(name);
     }
 
     return new_entry;
