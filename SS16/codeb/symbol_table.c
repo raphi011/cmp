@@ -8,7 +8,8 @@
 #include "regs.h"
 #include "asm.h"
 
-struct symbol *symbol_table_add(struct symbol* table, char *name, enum symbol_type type) {
+struct symbol *
+symbol_table_add(struct symbol* table, char *name, enum symbol_type type) {
     if (symbol_table_exists(table,name)) { 
         exit(EXIT_ERROR); 
     } 
@@ -21,7 +22,7 @@ struct symbol *symbol_table_add(struct symbol* table, char *name, enum symbol_ty
     new_entry->type = type;
 
     if (type == variable) {
-        new_entry->reg = regs_new_var ();
+        new_entry->reg = regs_new_par ();
     } else if (type == label) {
         new_entry->reg = asm_new_label(name);
     }
@@ -29,7 +30,8 @@ struct symbol *symbol_table_add(struct symbol* table, char *name, enum symbol_ty
     return new_entry;
 }
 
-struct symbol *symbol_table_merge(struct symbol* table1, struct symbol* table2)  {
+struct symbol *
+symbol_table_merge(struct symbol* table1, struct symbol* table2)  {
     struct symbol * table1_clone = symbol_table_clone(table1);
     struct symbol * table2_clone = symbol_table_clone(table2);
 
@@ -48,7 +50,8 @@ struct symbol *symbol_table_merge(struct symbol* table1, struct symbol* table2) 
     }
 }
 
-void symbol_table_print(struct symbol* table) {
+void 
+symbol_table_print(struct symbol* table) {
     struct symbol *next = table;
     printf("printing symbol table: ");
 
@@ -60,7 +63,8 @@ void symbol_table_print(struct symbol* table) {
     printf("\n");
 }
 
-struct symbol *symbol_table_get(struct symbol* table, char *name) {
+struct symbol *
+symbol_table_get(struct symbol* table, char *name) {
     struct symbol *next = table;
 
     while (next != NULL) {
@@ -74,11 +78,13 @@ struct symbol *symbol_table_get(struct symbol* table, char *name) {
     return NULL;
 }
 
-bool symbol_table_exists (struct symbol* table, char *name) {
+bool 
+symbol_table_exists (struct symbol* table, char *name) {
     return symbol_table_get (table, name) != NULL;
 }
 
-bool symbol_table_exists_type(struct symbol* table, char *name, int type) {
+bool 
+symbol_table_exists_type(struct symbol* table, char *name, int type) {
     struct symbol *next = table;
 
     while (next != NULL) {
@@ -95,7 +101,8 @@ bool symbol_table_exists_type(struct symbol* table, char *name, int type) {
     return false;
 }
 
-struct symbol* symbol_table_clone(struct symbol* table) {
+struct symbol* 
+symbol_table_clone(struct symbol* table) {
     if (table == NULL) {
         return NULL;
     }

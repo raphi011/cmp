@@ -59,7 +59,6 @@ funcdef : ID BRACKET_LEFT pars BRACKET_RIGHT stats END SEMICOLON
             @i @stats.vars@ = regs_init_vars (@pars.pars@); 
 
             @cmp asm_func (@ID.name@);
-            @cmp @revorder(1) regs_cleanup();
         @}
         ;
 

@@ -4,15 +4,20 @@
 #include <stdbool.h>
 
 #include "symbol_table.h"
+#include "regs.h"
 
 #define MAX_REG (9)
 #define MAX_PARAMS (6)
+#define MAX_CALLEE (5)
 
-char* reg_avail[MAX_REG];
-bool reg_used[MAX_REG];
+char* avail_regs[MAX_REG];
+bool used_regs[MAX_REG];
 
-char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+char *par_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+
 char *callee_regs[] = { "rbx", "r12", "r13", "r14", "r15" };
+
+int used_callee_regs = 0;
 
 struct symbol*
 regs_init_vars (struct symbol *pars) {
@@ -20,24 +25,26 @@ regs_init_vars (struct symbol *pars) {
     struct symbol *next = pars;
 
     while (next != NULL) {
-        next->reg = strdup(regs[i++]);
+        next->reg = strdup(par_regs[i++]);
         next = next->next;
     }
 
     while (j < MAX_REG) {
-        reg_used[j] = false;
-        reg_avail[j] = NULL;
+        used_regs[j] = false;
+        avail_regs[j] = NULL;
         j++;
     }
 
     j = 3;
 
-    reg_avail[0] = "rax"; 
-    reg_avail[1] = "r10"; 
-    reg_avail[2] = "r11"; 
+    // general purpose regs
+    avail_regs[0] = "rax"; 
+    avail_regs[1] = "r10"; 
+    avail_regs[2] = "r11"; 
 
     while (i < MAX_PARAMS) {
-        reg_avail[j++] = regs[i++];
+        // add non used argument regs
+        avail_regs[j++] = par_regs[i++];
     }
 
     return pars;
@@ -48,25 +55,24 @@ regs_free_if_temp (char *r) {
     int i;
 
     for (i = 0; i < MAX_REG; i++) {
-        if (reg_avail[i] == NULL) {
+        if (avail_regs[i] == NULL) {
             break;
         }
-        if (strcmp(r, reg_avail[i]) == 0) {
-                reg_used[i] = false;
-                printf("# freed %s\n", r);
+        if (strcmp(r, avail_regs[i]) == 0) {
+                used_regs[i] = false;
                 return;
         }
     }
 }
 
 char*
-regs_new_var (void) {
+regs_new_par (void) {
     int i;
 
     for (i = MAX_REG - 1; i >= 0; i--) {
-        if (reg_avail[i] != NULL && !reg_used[i]) {
-            char *reg = strdup(reg_avail[i]);
-            reg_avail[i] = NULL;
+        if (avail_regs[i] != NULL && !used_regs[i]) {
+            char *reg = strdup(avail_regs[i]);
+            avail_regs[i] = NULL;
             return reg;
         }
     }
@@ -80,13 +86,20 @@ regs_new_temp (void) {
     int i;
 
     for (i = 0; i < MAX_REG; i++) {
-        if (reg_avail[i] == NULL) {
+        if (avail_regs[i] == NULL) {
             break;
         }
-        if (!reg_used[i]) {
-            reg_used[i] = true;
-            return strdup (reg_avail[i]);
+        if (!used_regs[i]) {
+            used_regs[i] = true;
+            return strdup (avail_regs[i]);
         }
+    }
+
+    if (used_callee_regs < MAX_CALLEE) {
+        printf("\tpush %%%s\n", callee_regs[used_callee_regs]);
+        char *reg = strdup (callee_regs[used_callee_regs]);
+        used_callee_regs++;
+        return reg;
     }
 
     printf("Out of registers\n");
@@ -119,6 +132,11 @@ regs_8bit(char* r) {
 }
 
 void
-regs_cleanup(void) {
-    printf("cleaning up\n");
+regs_pop_callee(void) {
+    int i;
+    for (i = used_callee_regs - 1; i >= 0; i--) {
+        printf("\tpop %%%s\n", callee_regs[i]);
+    }
+
+    used_callee_regs = 0;
 }

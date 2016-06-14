@@ -94,10 +94,23 @@ asm_cond (char *label, treenode *node) {
     }
 }
 
+static void
+asm_ret (void) {
+    regs_pop_callee();
+
+    print_code ("ret");
+}
+
+void
+asm_ret_reg (treenode *par) {
+    asm_move (par, "rax");
+    asm_ret ();
+}
+
 void
 asm_ret_const (int val) {
     asm_mov_const(val, "rax");
-    print_code ("ret");
+    asm_ret ();
 }
 
 void
@@ -105,13 +118,9 @@ asm_assign (treenode *par1, treenode *par2) {
     asm_move (par2, REG(par1)); 
 }
 
-void
-asm_ret (treenode *par) {
-    asm_move (par, "rax");
-    print_code ("ret");
-}
 
-char* asm_add (treenode *par1, treenode *par2) {
+char*
+asm_add (treenode *par1, treenode *par2) {
     char * reg = regs_new_temp();
 
     if (HAS_REG(par1) && HAS_REG(par2)) {
@@ -135,7 +144,8 @@ char* asm_add (treenode *par1, treenode *par2) {
     return reg;
 }
 
-char* asm_mult (treenode *par1, treenode *par2) {
+char*
+asm_mult (treenode *par1, treenode *par2) {
     char * reg = regs_new_temp();
 
     if (HAS_REG(par1) && HAS_REG(par2)) {
@@ -160,7 +170,8 @@ char* asm_mult (treenode *par1, treenode *par2) {
 }
 
 
-char* asm_minus (treenode *par) {
+char*
+asm_minus (treenode *par) {
     char * reg = regs_new_temp ();
 
     asm_move(par, reg);
@@ -173,7 +184,8 @@ char* asm_minus (treenode *par) {
     return reg;
 }
 
-char* asm_or (treenode *par1, treenode *par2) {
+char*
+asm_or (treenode *par1, treenode *par2) {
     char *reg = regs_new_temp ();
 
     if (HAS_REG(par1) && HAS_REG(par2)) {
@@ -197,7 +209,8 @@ char* asm_or (treenode *par1, treenode *par2) {
     return reg;
 }
 
-char* asm_not (treenode *par) {
+char*
+asm_not (treenode *par) {
     char *reg = regs_new_temp ();
 
     asm_move (par, reg);
@@ -210,7 +223,8 @@ char* asm_not (treenode *par) {
     return reg;
 }
 
-char* asm_less (treenode *par1, treenode *par2) {
+char*
+asm_less (treenode *par1, treenode *par2) {
     char *reg = regs_new_temp ();
     asm_mov_const(0, reg);
 
@@ -240,7 +254,8 @@ char* asm_less (treenode *par1, treenode *par2) {
     return reg;
 }
 
-char* asm_mem (treenode *par) {
+char*
+asm_mem (treenode *par) {
     char *reg = regs_new_temp ();
 
     if (HAS_REG(par)) {
@@ -253,7 +268,8 @@ char* asm_mem (treenode *par) {
     return reg;
 }
 
-char* asm_eq (treenode *par1, treenode *par2) {
+char*
+asm_eq (treenode *par1, treenode *par2) {
     char *reg = regs_new_temp ();
     asm_mov_const(0, reg);
 
