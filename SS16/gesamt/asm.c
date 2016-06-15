@@ -8,6 +8,11 @@
 
 static inline void
 asm_mov_reg(char *reg1, char *reg2) {
+    if (strcmp(reg1, reg2) == 0) {
+        code_print ("# unncessary move");
+        return;
+    }
+
     code_print ("movq %%%s, %%%s", reg1, reg2);
 }
 
@@ -96,7 +101,7 @@ asm_cond (char *label, treenode *node) {
 
 static void
 asm_ret (void) {
-    regs_pop_callee();
+    /* regs_pop_callee(); */
 
     code_print ("ret");
     returned = true;
@@ -180,11 +185,13 @@ char*
 asm_minus (treenode *par) {
     char * reg = regs_new_temp ();
 
-    asm_move(par, reg);
-    code_print ("neg %%%s", reg);
-
-    if (HAS_REG (par)) {
+    if (HAS_REG(par)) {
+        asm_move(par, reg);
+        code_print ("neg %%%s", reg);
         regs_free_if_temp (REG(par));
+    } else {
+        asm_mov_const(-VAL(par), reg);
+        printf("# minus fixed value\n");
     }
 
     return reg;
@@ -317,17 +324,8 @@ asm_call (treenode *call) {
     
     treenode *param = LEFT_CHILD(call); 
 
-    while (param != NULL) {
-        char *param_reg = param->op == C_FUNC_PARA_EXPR ? LEFT_REG(param) : param->reg;
 
-        printf("# reg: %s\n", param_reg);
-
-        par_regs[reg_index++] = param_reg;
-
-        param = RIGHT_CHILD(param);
-    }
-
-    regs_setup_call_params(par_regs);
+    regs_setup_call_params(param, reg);
 
     code_print("call %s", func_name);
     asm_mov_reg("rax", reg);

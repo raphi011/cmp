@@ -7,64 +7,91 @@
 #include "regs.h"
 #include "code.h"
 
-char* avail_regs[MAX_REG];
 bool used_regs[MAX_REG];
+bool temp_regs[MAX_REG];
 
-
-char *caller_regs[] = { "rax", "r10", "r11", "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-char *par_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-
-char *callee_regs[] = { "rbx", "r12", "r13", "r14", "r15" };
-
-int used_callee_regs = 0;
+char *caller_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9", "rax", "r10", "r11" };
 
 struct symbol*
 regs_init_vars (struct symbol *pars) {
-    int i = 0, j = 0;
+    int i = 0;
     struct symbol *next = pars;
-
-    while (next != NULL) {
-        next->reg = strdup(par_regs[i++]);
+    
+    /* assign registers to parameters */
+    for (i = 0; i < MAX_PARAMS && next != NULL; i++) {
+        used_regs[i] = true;
+        temp_regs[i] = false;
+        next->reg = strdup(caller_regs[i]);
         next = next->next;
     }
 
-    while (j < MAX_REG) {
-        used_regs[j] = false;
-        avail_regs[j] = NULL;
-        j++;
-    }
-
-    j = 3;
-
-    // general purpose regs
-    avail_regs[0] = "rax"; 
-    avail_regs[1] = "r10"; 
-    avail_regs[2] = "r11"; 
-
-    while (i < MAX_PARAMS) {
-        // add non used argument regs
-        avail_regs[j++] = par_regs[i++];
+    /* init used / temp values */
+    for (; i < MAX_REG; i++) {
+        used_regs[i] = false;
+        temp_regs[i] = true;
     }
 
     return pars;
 }
 
 void
-regs_setup_call_params (char** regs) {
-    int i;
+regs_setup_call_params (treenode* node, char *preserve) {
+    int i = 0;
 
-    while (regs[i] != NULL && i < MAX_PARAMS) {
-        char *reg = regs[i];
-        int ofs = regs_caller_stack_ofs(reg);
+    while (node != NULL) {
+        treenode* param = (OP_LABEL(node) == C_FUNC_PARA_EXPR) ? LEFT_CHILD(node) : node;
 
-        if (ofs == -1) {
-            code_print ("mov %%%s, %%%s", reg, par_regs[i]);
+        /* printf("# setup_call_params: NODE node->op = %d, node->reg = %s, node->val = %d\n", OP_LABEL(node), REG(node), VAL(node));
+        printf("# setup_call_params: LEFT_CHILD node->op = %d, node->reg = %s, node->val = %d\n", OP_LABEL(LEFT_CHILD(node)), LEFT_REG(node), LEFT_VAL(node));
+        printf("# setup_call_params: selected: %s, reg: %s\n", (OP_LABEL(node) == C_FUNC_PARA_EXPR) ? "LEFT_CHILD" : "NODE", REG (param));  */
+
+        if (!HAS_REG (param)) {
+            code_print ("mov $%d, %%%s", VAL(param), caller_regs[i]);
         } else {
-            code_print ("mov %i(%%rsp), %%%s", ofs, par_regs[i]);
+            char *reg = REG (param);
+
+            if (strcmp (reg, caller_regs[i]) != 0) {
+                int ofs = regs_caller_stack_ofs(reg, preserve);
+
+                if (ofs == -1) {
+                    code_print ("mov %%%s, %%%s", reg, caller_regs[i]);
+                } else {
+                    code_print ("mov %i(%%rsp), %%%s", ofs, caller_regs[i]);
+                }
+            }
         }
 
+
+        if (OP_LABEL (node) == C_FUNC_PARA_EXPR) {
+            node = RIGHT_CHILD(node);
+        } else {
+            node = NULL;
+        }
+         
         i++;
     }
+}
+
+int 
+regs_caller_stack_ofs (char *reg, char *preserve) {
+    int i;
+    int index = 0;
+
+    for (i = 0; i < MAX_REG; i++) {
+        int cur_reg_index = MAX_REG - 1 - i;
+        if (!used_regs[cur_reg_index] || strcmp (preserve, caller_regs[cur_reg_index]) == 0) {
+            continue;
+        }
+
+        if (strcmp (reg, caller_regs[cur_reg_index]) == 0) {
+            return index * 8;
+        }
+
+        index++;
+    }
+
+    /* reg is not on stack, direct use of reg possible */
+    return -1;
 }
 
 void
@@ -72,7 +99,8 @@ regs_restore_caller(char *preserve) {
     int i;
 
     for (i = MAX_REG - 1; i >= 0; i--) {
-        if (strcmp (preserve, caller_regs[i]) != 0) {
+        /* only restore if it was used before and is not the return register */
+        if (used_regs[i] && (strcmp (preserve, caller_regs[i]) != 0)) {
             code_print("pop %%%s", caller_regs[i]);
         }
     }
@@ -83,7 +111,8 @@ regs_save_caller(char * preserve) {
     int i;
 
     for (i = 0; i < MAX_REG; i++) {
-        if (strcmp (preserve, caller_regs[i]) != 0) {
+        /* only save if it was used before and is not the return register */
+        if (used_regs[i] && strcmp (preserve, caller_regs[i]) != 0) {
             code_print("push %%%s", caller_regs[i]);
         }
     }
@@ -93,13 +122,12 @@ void
 regs_free_if_temp (char *r) {
     int i;
 
+
     for (i = 0; i < MAX_REG; i++) {
-        if (avail_regs[i] == NULL) {
-            break;
-        }
-        if (strcmp(r, avail_regs[i]) == 0) {
-                used_regs[i] = false;
-                return;
+        if (strcmp(r, caller_regs[i]) == 0
+            && temp_regs[i]) {
+            used_regs[i] = false;
+            return;
         }
     }
 }
@@ -109,9 +137,10 @@ regs_new_par (void) {
     int i;
 
     for (i = MAX_REG - 1; i >= 0; i--) {
-        if (avail_regs[i] != NULL && !used_regs[i]) {
-            char *reg = strdup(avail_regs[i]);
-            avail_regs[i] = NULL;
+        if (!used_regs[i]) {
+            char *reg = strdup(caller_regs[i]);
+            temp_regs[i] = false;
+            used_regs[i] = true;
             return reg;
         }
     }
@@ -125,12 +154,9 @@ regs_new_temp (void) {
     int i;
 
     for (i = 0; i < MAX_REG; i++) {
-        if (avail_regs[i] == NULL) {
-            break;
-        }
-        if (!used_regs[i]) {
+        if (!used_regs[i] && temp_regs[i]) {
             used_regs[i] = true;
-            return strdup (avail_regs[i]);
+            return strdup (caller_regs[i]);
         }
     }
 
@@ -172,21 +198,8 @@ regs_8bit (char* r) {
 	}
 }
 
-int 
-regs_caller_stack_ofs (char *reg) {
-    int i;
 
-    for (i = 0; i < MAX_REG; i++) {
-        if (strcmp (reg, caller_regs[MAX_REG - 1 - i]) == 0) {
-            return i * 8;
-        }
-    }
-
-    /* reg is not on stack, direct use of reg possible */
-    return -1;
-}
-
-void
+/* void
 regs_pop_callee(void) {
     int i;
 
@@ -195,5 +208,5 @@ regs_pop_callee(void) {
     }
 
     used_callee_regs = 0;
-}
+} */
 
