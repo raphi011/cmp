@@ -1,0 +1,50 @@
+%{
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#define CODE
+
+#include "asm.h"
+#include "code.h"
+
+
+%}
+
+%start stat 
+
+%term C_RETURN=1 C_ADD=2 C_MULT=3 C_MINUS=4 C_OR=5 C_NOT=6 C_LESS=7 C_EQ=8 C_NUM=9 C_FUNC=10 C_RET=11 C_ID=12 C_MEM_READ=13 C_ASSIGN=14 C_MEM_WRITE=15 C_GUARDED=16 C_FUNC_PARA_EXPR=17
+
+%%
+
+stat: term                                  # 0 #
+stat: C_RET(expr)                           # 1 # asm_ret_reg (LEFT_CHILD(bnode));
+stat: C_MEM_WRITE(term, expr)               # 0 # asm_mem_write (LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+stat: C_ASSIGN(expr)                        # 0 # asm_move (LEFT_CHILD(bnode), bnode->reg);
+
+term: expr                                  # 1 #                     
+term: const                                 # 0 #
+term: C_ID                                  # 0 #
+term: C_FUNC(exprs)                         # 0 # bnode->reg = asm_call (bnode);
+
+exprs: C_FUNC_PARA_EXPR(expr, exprs)        # 0 # 
+exprs: expr                                 # 0 #
+
+expr: unary                                 # 0 #
+expr: C_ADD(term, term)                     # 1 # bnode->reg = asm_add (LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+expr: C_ADD(cons, const)                    # 0 # bnode->val = LEFT_VAL(bnode) + RIGHT_VAL(bnode);
+expr: C_MULT(term, term)                    # 1 # bnode->reg = asm_mult (LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+expr: C_OR(term, term)                      # 1 # bnode->reg = asm_or (LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+expr: C_LESS(term, term)                    # 1 # bnode->reg = asm_less (LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+expr: C_EQ(term, term)                      # 1 # bnode->reg = asm_eq (LEFT_CHILD(bnode), RIGHT_CHILD(bnode));
+
+unary: term                                 # 1 # 
+unary: C_MINUS(const)                       # 0 # bnode->val = -LEFT_VAL(bnode);
+unary: C_MINUS(unary)                       # 1 # bnode->reg = asm_minus (LEFT_CHILD(bnode));
+unary: C_NOT(unary)                         # 1 # bnode->reg = asm_not (LEFT_CHILD(bnode));
+unary: C_MEM_READ(term)                     # 0 # bnode->reg = asm_mem (LEFT_CHILD(bnode));
+
+const: C_NUM
+
+%%
